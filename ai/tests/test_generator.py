@@ -1,20 +1,75 @@
 """
-Basic sanity tests. Run with: python -m pytest ai/tests/
+Tests for the ai/ module.
 
-These force use_llm=False so they run offline / without an API key —
-they check the grounded fallback logic, which is the part that must
-never hallucinate.
+Run with: python -m pytest ai/tests/
+
+Offline tests (no API key needed) force use_llm=False to exercise the
+grounded fallback path.  LLM-path tests mock call_llm / acall_llm directly
+so they never hit the network.
 """
 
+from __future__ import annotations
+
+import asyncio
 import sys
+import time
 from pathlib import Path
+from typing import Any, Dict
+from unittest.mock import AsyncMock, MagicMock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from ai.generator import _dep_name, _dep_to_explanation, _file_to_explanation, _strip_json_fences, generate_onboarding
+from ai.generator import (
+    _CACHE_TTL_SECONDS,
+    _cache,
+    _cache_get,
+    _cache_key,
+    _cache_set,
+    _dep_name,
+    _dep_to_explanation,
+    _file_to_explanation,
+    _strip_json_fences,
+    async_generate_onboarding,
+    generate_onboarding,
+)
+from ai.llm_client import (
+    LLMUnavailableError,
+    _extract_tool_input,
+    _is_transient,
+    _log_usage,
+    call_llm,
+)
 from ai.mock_data import MOCK_ANALYSIS_COMPLETE, MOCK_ANALYSIS_SPARSE
-from ai.schemas import DependencyEntry, ImportantFileEntry, RepoAnalysis
+from ai.schemas import DependencyEntry, ImportantFileEntry, OnboardingKnowledge, RepoAnalysis
 
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _make_llm_result(**overrides) -> Dict[str, Any]:
+    """Minimal valid dict that OnboardingKnowledge.model_validate accepts."""
+    base: Dict[str, Any] = {
+        "project_overview": "Test overview",
+        "tech_stack": [],
+        "architecture": "Test architecture",
+        "important_files": [],
+        "dependencies": [],
+        "setup_guide": ["run tests"],
+        "development_workflow": ["commit and push"],
+        "starter_tasks": ["read the README"],
+        "data_completeness_notes": [],
+        # generator adds these after the call:
+        "architecture_diagram": "graph TD\n    Unknown[\"dummy\"]",
+        "used_llm": True,
+    }
+    base.update(overrides)
+    return base
+
+
+# ---------------------------------------------------------------------------
+# Fallback path — grounded output
+# ---------------------------------------------------------------------------
 
 def test_complete_analysis_produces_grounded_output():
     result = generate_onboarding(MOCK_ANALYSIS_COMPLETE, use_llm=False)
@@ -48,12 +103,13 @@ def test_fallback_always_notes_architecture_limitation():
         )
 
 
-# --- Hallucination-fix regression tests ---
+# ---------------------------------------------------------------------------
+# Hallucination-fix regression tests
+# ---------------------------------------------------------------------------
 
 def test_setup_guide_with_deps_names_them_explicitly():
     """setup_guide must list actual dependency names, not generic prose."""
     result = generate_onboarding(MOCK_ANALYSIS_COMPLETE, use_llm=False)
-    # The first step must contain at least one real dep name from the mock data.
     assert any(
         "fastapi" in step.lower() or "uvicorn" in step.lower() or "pydantic" in step.lower()
         for step in result.setup_guide
@@ -77,7 +133,9 @@ def test_development_workflow_is_always_sentinel_in_fallback():
         )
 
 
-# --- Fix 3: plain-string Union branch tests ---
+# ---------------------------------------------------------------------------
+# Union branch tests
+# ---------------------------------------------------------------------------
 
 def test_file_to_explanation_plain_string():
     """_file_to_explanation must handle a bare string path, not just ImportantFileEntry."""
@@ -115,7 +173,9 @@ def test_plain_string_deps_flow_through_fallback():
     assert "click" in result.setup_guide[0]
 
 
-# --- Fix 4: _strip_json_fences robustness ---
+# ---------------------------------------------------------------------------
+# _strip_json_fences (kept for backward compat — no longer used internally)
+# ---------------------------------------------------------------------------
 
 def test_strip_json_fences_clean_json():
     raw = '{"key": "value"}'
@@ -138,7 +198,9 @@ def test_strip_json_fences_plain_fence():
     assert _strip_json_fences(raw) == '{"key": "value"}'
 
 
-# --- Fix 5: used_llm field ---
+# ---------------------------------------------------------------------------
+# used_llm field
+# ---------------------------------------------------------------------------
 
 def test_fallback_sets_used_llm_false():
     result = generate_onboarding(MOCK_ANALYSIS_COMPLETE, use_llm=False)
@@ -150,7 +212,181 @@ def test_fallback_sparse_sets_used_llm_false():
     assert result.used_llm is False
 
 
+# ---------------------------------------------------------------------------
+# schema_version field
+# ---------------------------------------------------------------------------
+
+def test_repo_analysis_has_schema_version():
+    analysis = RepoAnalysis()
+    assert analysis.schema_version == 1
+
+
+def test_onboarding_knowledge_has_schema_version():
+    result = generate_onboarding(MOCK_ANALYSIS_SPARSE, use_llm=False)
+    assert result.schema_version == 1
+
+
+def test_schema_version_present_in_llm_path():
+    """schema_version must be set even when the LLM path runs."""
+    with patch("ai.generator.call_llm", return_value=_make_llm_result()):
+        result = generate_onboarding(MOCK_ANALYSIS_SPARSE, use_llm=True)
+    assert result.schema_version == 1
+
+
+# ---------------------------------------------------------------------------
+# LLM path (sync) — mocked
+# ---------------------------------------------------------------------------
+
+def test_llm_path_used_llm_true():
+    with patch("ai.generator.call_llm", return_value=_make_llm_result()):
+        result = generate_onboarding(MOCK_ANALYSIS_SPARSE, use_llm=True)
+    assert result.used_llm is True
+    assert result.project_overview == "Test overview"
+
+
+def test_llm_path_failure_falls_back():
+    """If call_llm raises, generate_onboarding must fall back without raising."""
+    _cache.clear()  # Ensure no cached result from prior tests interferes.
+    with patch("ai.generator.call_llm", side_effect=LLMUnavailableError("no key")):
+        result = generate_onboarding(MOCK_ANALYSIS_SPARSE, use_llm=True)
+    assert result.used_llm is False
+
+
+# ---------------------------------------------------------------------------
+# LLM path (async) — mocked
+# ---------------------------------------------------------------------------
+
+def test_async_llm_path_used_llm_true():
+    _cache.clear()
+    async def _run():
+        with patch("ai.generator.acall_llm", new_callable=AsyncMock,
+                   return_value=_make_llm_result()):
+            return await async_generate_onboarding(MOCK_ANALYSIS_SPARSE, use_llm=True)
+    result = asyncio.run(_run())
+    assert result.used_llm is True
+
+
+def test_async_llm_path_failure_falls_back():
+    _cache.clear()  # Ensure no cached result from prior tests interferes.
+    async def _run():
+        with patch("ai.generator.acall_llm", new_callable=AsyncMock,
+                   side_effect=LLMUnavailableError("no key")):
+            return await async_generate_onboarding(MOCK_ANALYSIS_SPARSE, use_llm=True)
+    result = asyncio.run(_run())
+    assert result.used_llm is False
+
+
+# ---------------------------------------------------------------------------
+# In-memory cache
+# ---------------------------------------------------------------------------
+
+def _clear_cache():
+    _cache.clear()
+
+
+def test_cache_miss_then_hit():
+    """Second identical call must return the cached result without calling the LLM."""
+    _clear_cache()
+    call_count = 0
+
+    def _fake_call_llm(system, user):
+        nonlocal call_count
+        call_count += 1
+        return _make_llm_result()
+
+    with patch("ai.generator.call_llm", side_effect=_fake_call_llm):
+        r1 = generate_onboarding(MOCK_ANALYSIS_SPARSE, use_llm=True)
+        r2 = generate_onboarding(MOCK_ANALYSIS_SPARSE, use_llm=True)
+
+    assert call_count == 1, "LLM should only be called once; second call must use cache"
+    assert r1.project_overview == r2.project_overview
+
+
+def test_cache_key_differs_for_different_inputs():
+    k1 = _cache_key(MOCK_ANALYSIS_COMPLETE)
+    k2 = _cache_key(MOCK_ANALYSIS_SPARSE)
+    assert k1 != k2
+
+
+def test_cache_ttl_expiry(monkeypatch):
+    """After TTL expires the cache entry is treated as a miss."""
+    _clear_cache()
+    key = _cache_key(MOCK_ANALYSIS_SPARSE)
+    fake_result = generate_onboarding(MOCK_ANALYSIS_SPARSE, use_llm=False)
+    _cache_set(key, fake_result)
+
+    # Wind the clock forward past TTL using monkeypatch on time.monotonic.
+    original_monotonic = time.monotonic
+    expired_time = original_monotonic() + _CACHE_TTL_SECONDS + 1
+    monkeypatch.setattr(time, "monotonic", lambda: expired_time)
+
+    assert _cache_get(key) is None, "Expired entry must be treated as a miss"
+
+
+def test_cache_hit_before_expiry(monkeypatch):
+    """Before TTL expires the cache entry is returned."""
+    _clear_cache()
+    key = _cache_key(MOCK_ANALYSIS_SPARSE)
+    fake_result = generate_onboarding(MOCK_ANALYSIS_SPARSE, use_llm=False)
+    _cache_set(key, fake_result)
+
+    # No time travel — should be a cache hit.
+    assert _cache_get(key) is fake_result
+
+
+# ---------------------------------------------------------------------------
+# llm_client internals
+# ---------------------------------------------------------------------------
+
+def test_extract_tool_input_success():
+    block = MagicMock()
+    block.type = "tool_use"
+    block.input = {"project_overview": "x"}
+    response = MagicMock()
+    response.content = [block]
+    result = _extract_tool_input(response)
+    assert result["project_overview"] == "x"
+
+
+def test_extract_tool_input_no_tool_block():
+    response = MagicMock()
+    response.content = []
+    try:
+        _extract_tool_input(response)
+        assert False, "Should have raised LLMUnavailableError"
+    except LLMUnavailableError:
+        pass
+
+
+def test_is_transient_returns_false_without_anthropic():
+    """Without anthropic installed _is_transient must return False gracefully."""
+    # We can't easily uninstall anthropic, but we can test its behaviour
+    # with a plain RuntimeError (which is neither transient nor auth).
+    assert _is_transient(RuntimeError("some random error")) is False
+
+
+def test_call_llm_no_api_key():
+    """call_llm must raise LLMUnavailableError immediately when no key is set."""
+    import os
+    original = os.environ.pop("ANTHROPIC_API_KEY", None)
+    try:
+        try:
+            call_llm("system", "user")
+            assert False, "Should have raised"
+        except LLMUnavailableError as e:
+            assert "ANTHROPIC_API_KEY" in str(e)
+    finally:
+        if original is not None:
+            os.environ["ANTHROPIC_API_KEY"] = original
+
+
+def test_log_usage_does_not_raise_on_bad_response():
+    """_log_usage must not raise even if usage attr is missing."""
+    _log_usage(object())  # plain object has no .usage — should be silent
+
+
 if __name__ == "__main__":
+    # Quick smoke-run for the offline tests.
     test_complete_analysis_produces_grounded_output()
     test_sparse_analysis_reports_gaps_instead_of_inventing()
     test_fallback_always_notes_architecture_limitation()
@@ -168,4 +404,18 @@ if __name__ == "__main__":
     test_strip_json_fences_plain_fence()
     test_fallback_sets_used_llm_false()
     test_fallback_sparse_sets_used_llm_false()
+    test_repo_analysis_has_schema_version()
+    test_onboarding_knowledge_has_schema_version()
+    test_schema_version_present_in_llm_path()
+    test_llm_path_used_llm_true()
+    test_llm_path_failure_falls_back()
+    test_async_llm_path_used_llm_true()
+    test_async_llm_path_failure_falls_back()
+    test_cache_miss_then_hit()
+    test_cache_key_differs_for_different_inputs()
+    test_call_llm_no_api_key()
+    test_extract_tool_input_success()
+    test_extract_tool_input_no_tool_block()
+    test_is_transient_returns_false_without_anthropic()
+    test_log_usage_does_not_raise_on_bad_response()
     print("All tests passed.")
