@@ -66,10 +66,20 @@ rule-based fallback — the demo still works, just with plainer prose.
   if the LLM path fails or isn't configured.
 - **Fallback path exists so the team is never blocked by API access during
   the demo.** This was worth calling out as a reliability decision.
+- **Hallucination fixes applied (Bob review):**
+  - Removed `"reasonably inferred"` escape clause from rule 1 of `SYSTEM_PROMPT`
+    (it was giving the model permission to fill gaps with general knowledge).
+  - Added explicit per-field rules (5–7) for `setup_guide`, `development_workflow`,
+    `architecture`, and `dependencies[].purpose` — each tied to specific input fields.
+  - Fallback `setup_guide` now lists actual dep names from the input instead of
+    generic `"Install project dependencies."` prose; both `setup_guide` and
+    `development_workflow` emit a `"Not derivable…"` sentinel when input lacks data.
+  - `build_user_prompt` comment protects the intentional `exclude_none=False` choice.
+  - `anthropic>=0.25.0` added to `backend/requirements.txt`.
 
 Recommended log entries for `bob_sessions/` (once that folder exists): prompt
 design iterations for `prompts.py`, the decision to keep diagram generation
-deterministic, and review of `generator.py`'s fallback logic.
+deterministic, and the hallucination-risk review that produced the rule 1–7 prompt.
 
 ## Running tests
 
