@@ -1,0 +1,174 @@
+/* ─── App Layout ─────────────────────────────────────────────────────────── */
+
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────── */
+
+.app-header {
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.app-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 32px;
+  flex-wrap: wrap;
+}
+
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-brand-icon {
+  font-size: 22px;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.app-brand-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-h);
+  letter-spacing: -0.2px;
+}
+
+.app-header-tagline {
+  font-size: 13px;
+  color: var(--text);
+}
+
+/* ─── Body ───────────────────────────────────────────────────────────────── */
+
+.app-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── Empty / Idle state ─────────────────────────────────────────────────── */
+
+.app-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 32px;
+  text-align: center;
+  gap: 16px;
+}
+
+.app-empty-icon {
+  font-size: 48px;
+  color: var(--accent);
+  opacity: 0.35;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.app-empty h2 {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-h);
+  margin: 0;
+}
+
+.app-empty p {
+  font-size: 15px;
+  color: var(--text);
+  max-width: 480px;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.app-empty-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.app-empty-feature {
+  font-size: 13px;
+  padding: 5px 12px;
+  border-radius: 99px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+/* ─── Error state ────────────────────────────────────────────────────────── */
+
+.app-error {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 32px;
+  text-align: center;
+  gap: 12px;
+}
+
+.app-error-icon {
+  font-size: 40px;
+  color: var(--orange);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.app-error h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-h);
+  margin: 0;
+}
+
+.app-error p {
+  font-size: 14px;
+  color: var(--text);
+  max-width: 400px;
+  margin: 0;
+}
+
+.app-retry-btn {
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--sans);
+  padding: 9px 22px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.app-retry-btn:hover {
+  opacity: 0.88;
+}
+
+@media (max-width: 600px) {
+  .app-header-inner {
+    padding: 14px 16px;
+  }
+
+  .app-header-tagline {
+    display: none;
+  }
+
+  .app-empty {
+    padding: 48px 20px;
+  }
+}

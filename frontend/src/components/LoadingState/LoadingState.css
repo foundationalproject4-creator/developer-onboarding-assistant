@@ -1,0 +1,90 @@
+/* ─── LoadingState ───────────────────────────────────────────────────────── */
+
+.loading-root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 32px;
+  gap: 28px;
+  flex: 1;
+}
+
+.loading-spinner-wrap {
+  position: relative;
+  width: 56px;
+  height: 56px;
+}
+
+.loading-spinner {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-pulse {
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: var(--accent-bg);
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.9); }
+  50%       { opacity: 1;   transform: scale(1.05); }
+}
+
+.loading-text {
+  text-align: center;
+}
+
+.loading-text h3 {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-h);
+  margin: 0 0 6px;
+}
+
+.loading-text p {
+  font-size: 14px;
+  color: var(--text);
+  transition: opacity 0.4s;
+  min-height: 22px;
+}
+
+.loading-steps {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.loading-step {
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: var(--surface);
+  transition: background 0.3s, color 0.3s, border-color 0.3s;
+}
+
+.loading-step.active {
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
+
+.loading-step.done {
+  background: var(--green-bg);
+  color: var(--green);
+  border-color: var(--green-border);
+}
