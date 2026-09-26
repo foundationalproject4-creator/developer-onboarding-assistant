@@ -20,6 +20,7 @@ MOCK_ANALYSIS_COMPLETE = RepoAnalysis(
         DependencyEntry(name="fastapi", version="0.115.12", type="prod"),
         DependencyEntry(name="uvicorn", version="0.34.2", type="prod"),
         DependencyEntry(name="pydantic", version="2.11.4", type="prod"),
+        DependencyEntry(name="anthropic", version="0.25.0", type="prod"),
     ],
     project_structure={
         "backend": ["main.py", "requirements.txt", "README.md"],

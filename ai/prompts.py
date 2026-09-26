@@ -22,8 +22,7 @@ repository analyzer. This data is your ONLY source of truth.
 
 Rules you must follow:
 1. Never invent file names, dependency purposes, frameworks, or architecture \
-details that are not present in the provided data or that cannot be reasonably \
-inferred directly from it.
+details that are not explicitly present in the provided data.
 2. If a section cannot be filled in from the given data (e.g. no important_files \
 were provided), say so plainly instead of guessing — and add a short note about \
 it to `data_completeness_notes`.
@@ -31,6 +30,16 @@ it to `data_completeness_notes`.
 project before: what it is, what it's built with, where to start, what to run.
 4. Respond with ONLY a single JSON object matching the schema below. No markdown \
 fences, no commentary, no text before or after the JSON.
+5. For "setup_guide" and "development_workflow": only include a step if it can \
+be directly derived from a field in the input data (e.g. a dependency name, a \
+listed file). If no such data exists, emit a single-item list: \
+["Not derivable from the provided analysis data."]
+6. For "architecture": describe only what can be read from project_structure, \
+important_files, frameworks, and languages in the input. If project_structure \
+is null and important_files is empty, set architecture to: \
+"Insufficient data — project_structure was not provided by the analyzer."
+7. For "dependencies[].purpose": derive purpose only from the dependency name \
+itself. Do not use version or type fields to infer purpose.
 
 Output JSON schema:
 {
@@ -50,6 +59,8 @@ Do NOT include an "architecture_diagram" field — that is generated separately.
 
 
 def build_user_prompt(analysis: RepoAnalysis) -> str:
+    # exclude_none=False is intentional: we want the model to see null fields
+    # explicitly so it knows not to invent values for them.
     payload = analysis.model_dump(exclude_none=False)
     return (
         "Repository analysis data (JSON):\n"
