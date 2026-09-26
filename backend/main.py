@@ -3,9 +3,34 @@ Developer Onboarding Assistant — Backend
 FastAPI application entry point.
 """
 
+import sys
+import os
+
+# ---------------------------------------------------------------------------
+# Path fix — make sure "analyzer/" is importable when the server is started
+# from the project root (developer-onboarding-assistant/) OR from inside
+# the backend/ sub-directory.
+#
+# Directory layout:
+#   developer-onboarding-assistant/
+#       analyzer/repository_analyzer.py   ← Meith's module
+#       backend/main.py                   ← this file
+#
+# When uvicorn is launched from the project root the working directory is
+# already on sys.path, so the import works automatically.  When it is
+# launched from inside backend/ we add the parent directory explicitly.
+# ---------------------------------------------------------------------------
+_project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, field_validator
 import uvicorn
+
+# Import the analyzer function that Meith built.
+# This must come AFTER the sys.path fix above.
+from analyzer.repository_analyzer import analyze_repository
 
 app = FastAPI(
     title="Developer Onboarding Assistant API",
@@ -29,11 +54,6 @@ class AnalyzeRequest(BaseModel):
         return v.strip()
 
 
-class AnalyzeResponse(BaseModel):
-    message: str
-    repo_path: str
-
-
 class HealthResponse(BaseModel):
     status: str
     version: str
@@ -55,19 +75,32 @@ def health() -> HealthResponse:
     return HealthResponse(status="ok", version=app.version)
 
 
-@app.post("/analyze", response_model=AnalyzeResponse, summary="Analyze repository")
-def analyze(request: AnalyzeRequest) -> AnalyzeResponse:
+@app.post("/analyze", summary="Analyze repository")
+def analyze(request: AnalyzeRequest) -> dict:
     """
-    Accepts a repository path and queues it for analysis.
+    Accepts a repository path, runs the Repository Analyzer on it, and
+    returns the full analysis result as JSON.
 
-    This endpoint is intentionally a placeholder — the Repository Analyzer
-    (implemented separately) will be wired in here once available.
+    On success the response looks like:
+        { "status": "ok", "repo_path": "...", "total_files": ..., ... }
+
+    On failure (bad path, permission error, etc.) a 400 Bad Request is
+    returned with a JSON body: { "detail": "<error message>" }
     """
-    # TODO: invoke the Repository Analyzer once Meith's module is ready.
-    return AnalyzeResponse(
-        message="Repository analysis started",
-        repo_path=request.repo_path,
-    )
+    # Call Meith's analyzer.  It never raises — errors come back as a dict
+    # with status == "error" and an "error" key describing what went wrong.
+    result = analyze_repository(request.repo_path)
+
+    # If the analyzer signals an error, turn it into an HTTP 400 response
+    # so the client gets a clear, standard error instead of a 200 with bad data.
+    if result.get("status") == "error":
+        raise HTTPException(
+            status_code=400,
+            detail=result.get("error", "Repository analysis failed"),
+        )
+
+    # Happy path — return the full analysis dict directly as JSON.
+    return result
 
 
 # ---------------------------------------------------------------------------
