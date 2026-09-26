@@ -6,6 +6,17 @@ the kind of thing that's easy for a model to hallucinate connections for.
 Instead we detect known signals (frameworks / dependency names) and only draw
 nodes and edges we have evidence for. If nothing is detected, we say so
 in the diagram itself rather than drawing a generic "example" diagram.
+
+Signal set maintenance
+----------------------
+Add new entries to the sets below when a stack starts appearing in repos and
+is being silently missed (diagram shows "Architecture not determinable…").
+Guidelines:
+- Use the lowercase pip/npm package name OR the common framework name as it
+  would appear in ``frameworks`` or ``dependencies`` of a RepoAnalysis.
+- Keep entries short — substring matching is used, so "remix" matches both
+  "remix" and "@remix-run/react".
+- Do NOT add very generic words that appear in non-framework dep names.
 """
 
 from __future__ import annotations
@@ -15,19 +26,76 @@ from typing import List
 from .schemas import RepoAnalysis
 
 FRONTEND_SIGNALS = {
-    "react", "vue", "angular", "next.js", "nextjs", "svelte", "nuxt", "vite",
+    # React ecosystem
+    "react", "next.js", "nextjs", "next",
+    # Vue ecosystem
+    "vue", "nuxt",
+    # Svelte / SvelteKit
+    "svelte", "sveltekit", "@sveltejs",
+    # Remix
+    "remix", "@remix-run",
+    # Angular
+    "angular", "@angular",
+    # Other popular frontend frameworks / build tools
+    "vite", "gatsby", "astro", "solid", "qwik",
+    # Older / still-common
+    "ember", "backbone", "knockout",
 }
+
 BACKEND_SIGNALS = {
-    "fastapi", "django", "flask", "express", "express.js", "spring", "spring boot",
-    "nestjs", "rails", "gin", "asp.net",
+    # Python
+    "fastapi", "django", "flask", "starlette", "tornado", "aiohttp", "falcon",
+    # Node.js
+    "express", "express.js", "koa", "hapi", "@hapi",
+    # NestJS (Node + TypeScript)
+    "nestjs", "@nestjs",
+    # Java / JVM
+    "spring", "spring boot", "quarkus", "micronaut", "ktor",
+    # Go
+    "gin", "echo", "fiber", "gorilla",
+    # Ruby
+    "rails", "sinatra",
+    # .NET
+    "asp.net", "aspnetcore",
+    # PHP
+    "laravel", "symfony",
+    # Rust
+    "actix", "axum", "rocket",
+    # Django REST Framework (often listed as a dep alongside django)
+    "djangorestframework", "rest_framework",
 }
+
 DATABASE_SIGNALS = {
-    "postgres", "postgresql", "mysql", "sqlite", "mongodb", "mongo", "redis",
-    "cassandra", "dynamodb", "mariadb", "sqlalchemy", "prisma",
+    # Relational
+    "postgres", "postgresql", "mysql", "sqlite", "mariadb", "mssql",
+    # NoSQL
+    "mongodb", "mongo", "cassandra", "couchdb", "neo4j", "arangodb",
+    # Key-value / cache (also appears as a service)
+    "redis",
+    # Cloud-managed
+    "dynamodb", "firestore", "cosmosdb", "bigtable", "spanner",
+    # ORMs / query builders (signal a DB is present)
+    "sqlalchemy", "alembic", "prisma", "typeorm", "sequelize", "knex",
+    "gorm", "hibernate", "jpa", "drizzle",
 }
+
 EXTERNAL_SERVICE_SIGNALS = {
-    "stripe", "twilio", "aws", "boto3", "s3", "sendgrid", "firebase",
-    "auth0", "openai", "anthropic", "kafka", "rabbitmq", "sentry",
+    # AI / LLM
+    "openai", "anthropic", "cohere", "huggingface", "langchain", "llamaindex",
+    # Payment
+    "stripe", "braintree", "paypal",
+    # Communication
+    "twilio", "sendgrid", "mailgun", "postmark", "resend",
+    # Auth
+    "auth0", "okta", "clerk", "supabase",
+    # Cloud providers
+    "aws", "boto3", "s3", "gcp", "google-cloud", "azure",
+    # Observability
+    "sentry", "datadog", "newrelic", "honeycomb",
+    # Messaging
+    "kafka", "rabbitmq", "celery", "rq", "sidekiq", "bull",
+    # Storage / CDN
+    "firebase", "cloudinary", "imgix",
 }
 
 
@@ -63,7 +131,7 @@ def generate_architecture_diagram(analysis: RepoAnalysis) -> str:
         lines.append('    Database[("Database")]')
         nodes_added = True
     for svc in detected_services:
-        node_id = "Ext_" + svc.replace(".", "_").replace(" ", "_").title()
+        node_id = "Ext_" + svc.replace(".", "_").replace(" ", "_").replace("-", "_").replace("@", "").title()
         lines.append(f'    {node_id}["{svc.title()}"]')
         nodes_added = True
 
@@ -72,7 +140,7 @@ def generate_architecture_diagram(analysis: RepoAnalysis) -> str:
     if has_backend and has_db:
         lines.append("    Backend --> Database")
     for svc in detected_services:
-        node_id = "Ext_" + svc.replace(".", "_").replace(" ", "_").title()
+        node_id = "Ext_" + svc.replace(".", "_").replace(" ", "_").replace("-", "_").replace("@", "").title()
         if has_backend:
             lines.append(f"    Backend --> {node_id}")
 
