@@ -1,63 +1,45 @@
 """
-Developer Onboarding Assistant — Backend
+Developer Onboarding Assistant - Backend
 FastAPI application entry point.
 """
 
-import sys
 import os
-
-# ---------------------------------------------------------------------------
-# Path fix — make sure "analyzer/" is importable when the server is started
-# from the project root (developer-onboarding-assistant/) OR from inside
-# the backend/ sub-directory.
-#
-# Directory layout:
-#   developer-onboarding-assistant/
-#       analyzer/repository_analyzer.py   ← Meith's module
-#       backend/main.py                   ← this file
-#
-# When uvicorn is launched from the project root the working directory is
-# already on sys.path, so the import works automatically.  When it is
-# launched from inside backend/ we add the parent directory explicitly.
-# ---------------------------------------------------------------------------
-_project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if _project_root not in sys.path:
-    sys.path.insert(0, _project_root)
+import shutil
+import subprocess
+import sys
+import tempfile
+from urllib.parse import urlparse
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ValidationError, field_validator
-import uvicorn
 
-# Import the analyzer function that Meith built.
-# This must come AFTER the sys.path fix above.
+# Make analyzer/ and ai/ importable from the project root.
+_project_root = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..")
+)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+
 from analyzer.repository_analyzer import analyze_repository
-
-# Import the adapter and the AI layer.
-# Both imports must come AFTER the sys.path fix so the project root is on sys.path.
 from backend.analyzer_adapter import to_repo_analysis
 from ai.generator import generate_onboarding
 from ai.schemas import OnboardingKnowledge, RepoAnalysis
 
+
 app = FastAPI(
-    title="Developer Onboarding Assistant API",
-    description="Backend API for the IBM Bob 2.0 Hackathon — Developer Onboarding Assistant",
+    title="Developer Onboarding Assistant - Backend",
+    description="Backend API for the IBM Bob 2.0 Hackathon - Developer Onboarding Assistant",
     version="0.1.0",
 )
 
 
-# ---------------------------------------------------------------------------
-# Request / Response models
-# ---------------------------------------------------------------------------
-
 class AnalyzeRequest(BaseModel):
-    repo_path: str
+    repo_url: str
 
-    @field_validator("repo_path")
+    @field_validator("repo_url")
     @classmethod
-    def repo_path_must_not_be_blank(cls, v: str) -> str:
-        if not v or not v.strip():
-            raise ValueError("repo_path must not be blank")
-        return v.strip()
+    def repo_url_must_be_valid(cls, v: str) -> str:
+        return _validate_repo_url(v)
 
 
 class HealthResponse(BaseModel):
@@ -65,81 +47,163 @@ class HealthResponse(BaseModel):
     version: str
 
 
-# ---------------------------------------------------------------------------
-# Routes
-# ---------------------------------------------------------------------------
+def _validate_repo_url(repo_url: str) -> str:
+    if not repo_url or not repo_url.strip():
+        raise ValueError("repo_url must not be blank")
+
+    value = repo_url.strip()
+    parsed = urlparse(value)
+
+    if parsed.scheme.lower() != "https":
+        raise ValueError("repo_url must use HTTPS")
+
+    if parsed.username or parsed.password:
+        raise ValueError(
+            "repo_url must not include credentials; "
+            "use a GitHub, GitLab, or Bitbucket HTTPS URL"
+        )
+
+    allowed_hosts = {"github.com", "gitlab.com", "bitbucket.org"}
+    hostname = (parsed.hostname or "").lower()
+
+    if hostname not in allowed_hosts:
+        raise ValueError(
+            "repo_url host must be GitHub, GitLab, or Bitbucket"
+        )
+
+    if not parsed.path or parsed.path == "/":
+        raise ValueError("repo_url must include a repository path")
+
+    return value
+
+
+def _clone_repository(repo_url: str) -> str:
+    temp_dir = tempfile.mkdtemp(prefix="onboarding_repo_")
+
+    try:
+        result = subprocess.run(
+            ["git", "clone", "--depth", "1", "--", repo_url, temp_dir],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+    except FileNotFoundError as exc:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        raise HTTPException(
+            status_code=500,
+            detail="Git is not installed or not available on PATH",
+        ) from exc
+    except subprocess.TimeoutExpired as exc:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        raise HTTPException(
+            status_code=400,
+            detail="Repository clone timed out",
+        ) from exc
+    except OSError as exc:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to start git clone: {exc}",
+        ) from exc
+
+    if result.returncode != 0:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+        stderr = (result.stderr or "").strip()
+        detail = "Could not clone repository"
+
+        if stderr:
+            detail += f": {stderr[:300]}"
+
+        raise HTTPException(status_code=400, detail=detail)
+
+    return temp_dir
+
 
 @app.get("/", summary="Root")
 def root() -> dict:
-    """Simple liveness check — confirms the backend is running."""
-    return {"message": "Developer Onboarding Assistant backend is running"}
+    """Simple liveness check."""
+    return {
+        "message": "Developer Onboarding Assistant backend is running"
+    }
 
 
-@app.get("/health", response_model=HealthResponse, summary="Health check")
+@app.get(
+    "/health",
+    response_model=HealthResponse,
+    summary="Health check",
+)
 def health() -> HealthResponse:
-    """Returns the current health status and API version."""
+    """Returns current health status and API version."""
     return HealthResponse(status="ok", version=app.version)
 
 
-@app.post("/analyze", response_model=OnboardingKnowledge, summary="Analyze repository")
+@app.post(
+    "/analyze",
+    response_model=OnboardingKnowledge,
+    summary="Analyze repository",
+)
 def analyze(request: AnalyzeRequest) -> OnboardingKnowledge:
     """
-    Accepts a repository path, runs the Repository Analyzer on it, adapts
-    the result for the AI layer, generates onboarding knowledge, and returns
-    the structured ``OnboardingKnowledge`` as JSON.
-
-    On failure a 4xx/5xx is returned with a JSON body:
-        { "detail": "<error message>" }
+    Clone a public repository, analyze it, adapt the analyzer output,
+    generate onboarding knowledge, and return the structured result.
     """
-    # ------------------------------------------------------------------
-    # 1. Run the Repository Analyzer.  Never raises — errors are in the dict.
-    # ------------------------------------------------------------------
-    result = analyze_repository(request.repo_path)
 
-    if result.get("status") == "error":
-        raise HTTPException(
-            status_code=400,
-            detail=result.get("error", "Repository analysis failed"),
-        )
+    repo_dir = _clone_repository(request.repo_url)
 
-    # ------------------------------------------------------------------
-    # 2. Adapt the analyzer output to the AI layer's RepoAnalysis shape.
-    # ------------------------------------------------------------------
     try:
-        analysis_dict = to_repo_analysis(result)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except Exception as exc:  # noqa: BLE001
-        raise HTTPException(
-            status_code=500, detail="Failed to process repository analysis results."
-        ) from exc
+        result = analyze_repository(repo_dir)
 
-    # ------------------------------------------------------------------
-    # 3. Validate against the RepoAnalysis Pydantic model.
-    # ------------------------------------------------------------------
-    try:
-        analysis = RepoAnalysis.model_validate(analysis_dict)
-    except ValidationError as exc:
-        raise HTTPException(
-            status_code=500, detail="Repository analysis data failed schema validation."
-        ) from exc
+        if result.get("status") == "error":
+            raise HTTPException(
+                status_code=400,
+                detail=result.get(
+                    "error",
+                    "Repository analysis failed",
+                ),
+            )
 
-    # ------------------------------------------------------------------
-    # 4. Generate onboarding knowledge (LLM path with rule-based fallback).
-    # ------------------------------------------------------------------
-    try:
-        knowledge = generate_onboarding(analysis)
-    except Exception as exc:  # noqa: BLE001
-        raise HTTPException(
-            status_code=500, detail="Failed to generate onboarding knowledge."
-        ) from exc
+        try:
+            analysis_dict = to_repo_analysis(result)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=400,
+                detail=str(exc),
+            ) from exc
+        except Exception as exc:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to process repository analysis results.",
+            ) from exc
 
-    return knowledge
+        try:
+            analysis = RepoAnalysis.model_validate(analysis_dict)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=500,
+                detail="Repository analysis does not match the expected schema.",
+            ) from exc
 
+        try:
+            return generate_onboarding(analysis)
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to generate onboarding knowledge.",
+            ) from exc
 
-# ---------------------------------------------------------------------------
-# Dev entry point
-# ---------------------------------------------------------------------------
+    finally:
+        shutil.rmtree(repo_dir, ignore_errors=True)
+
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    import uvicorn
+
+    uvicorn.run(
+        "backend.main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+    )

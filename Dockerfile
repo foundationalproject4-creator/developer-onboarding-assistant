@@ -16,6 +16,9 @@
 #   AI_MAX_REQUESTS    — Hard cap on LLM calls per process lifetime (0 = unlimited).
 
 FROM python:3.13-slim
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # Minimal OS hardening: run as a non-root user.
 RUN addgroup --system app && adduser --system --ingroup app app
@@ -29,6 +32,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application source.
 # ai/ is a sibling of backend/ and must be on PYTHONPATH.
 COPY backend/ ./backend/
+COPY analyzer/ ./analyzer/
 COPY ai/ ./ai/
 
 # ai/ needs to be importable as a top-level package from backend/main.py.
