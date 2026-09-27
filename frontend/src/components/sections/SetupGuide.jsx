@@ -15,7 +15,7 @@ function CopyButton({ text }) {
     <button
       className={`copy-btn${copied ? ' copied' : ''}`}
       onClick={handleCopy}
-      aria-label={copied ? 'Copied' : 'Copy commands'}
+      aria-label={copied ? 'Copied to clipboard' : 'Copy commands'}
       type="button"
     >
       {copied ? '✓ Copied' : 'Copy'}

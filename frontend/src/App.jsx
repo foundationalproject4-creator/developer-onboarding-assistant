@@ -36,61 +36,102 @@ export default function App() {
       <header className="app-header">
         <div className="app-header-inner">
           <div className="app-brand">
-            <span className="app-brand-icon" aria-hidden="true">⬡</span>
+            {/* SVG hex logo */}
+            <svg className="app-brand-logo" viewBox="0 0 32 32" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M16 2L28.124 9V23L16 30L3.876 23V9L16 2Z"
+                fill="var(--accent-bg)"
+                stroke="var(--accent)"
+                strokeWidth="1.5"
+              />
+              <path
+                d="M11 13l3 3-3 3M17 19h4"
+                stroke="var(--accent)"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
             <span className="app-brand-name">Developer Onboarding Assistant</span>
           </div>
-          <div className="app-header-tagline">
-            Understand any repository in seconds
+
+          <div className="app-header-right">
+            <div className="app-header-badge">
+              <span className="app-header-badge-dot" aria-hidden="true" />
+              AI-powered
+            </div>
           </div>
         </div>
       </header>
 
-      {/* ── Repo input — always visible ── */}
-      <RepoInput onSubmit={handleAnalyze} isLoading={isLoading} />
-
       {/* ── Main content area ── */}
       <div className="app-body">
         {appState === 'idle' && (
-          <div className="app-empty">
-            <div className="app-empty-icon" aria-hidden="true">⬡</div>
-            <h2>Paste a repository URL to get started</h2>
-            <p>
-              Enter any public GitHub, GitLab, or Bitbucket repository URL above
-              and click <strong>Analyze Repository</strong> to generate a complete
-              onboarding guide.
-            </p>
-            <div className="app-empty-features">
-              {[
-                ['📋', 'Project Overview'],
-                ['🔧', 'Tech Stack'],
-                ['🗂', 'File Structure'],
-                ['🏗', 'Architecture'],
-                ['⚙️', 'Setup Guide'],
-                ['🔀', 'Dev Workflow'],
-                ['✅', 'Starter Tasks'],
-              ].map(([icon, label]) => (
-                <span key={label} className="app-empty-feature">
-                  <span aria-hidden="true">{icon}</span> {label}
-                </span>
-              ))}
+          <section className="app-hero" aria-label="Get started">
+            <div className="app-hero-content">
+              <div className="app-hero-eyebrow" aria-hidden="true">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
+                  <circle cx="5" cy="5" r="5" />
+                </svg>
+                IBM watsonx.ai · Repository Analysis
+              </div>
+
+              <h1 className="app-hero-title">
+                Understand Any<br />
+                <span>Codebase in Minutes</span>
+              </h1>
+
+              <p className="app-hero-subtitle">
+                AI-powered repository analysis that turns unfamiliar codebases into
+                structured developer onboarding guides — automatically.
+              </p>
+
+              <div className="app-hero-input-area">
+                <RepoInput onSubmit={handleAnalyze} isLoading={isLoading} />
+              </div>
+
+              <div className="app-hero-capabilities" aria-label="Included in every guide">
+                {[
+                  'Architecture',
+                  'Tech Stack',
+                  'Important Files',
+                  'Setup Guide',
+                  'Dev Workflow',
+                  'Starter Tasks',
+                  'Project Structure',
+                ].map(label => (
+                  <span key={label} className="app-hero-cap">
+                    <span className="app-hero-cap-check" aria-hidden="true">✓</span>
+                    {label}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
+          </section>
         )}
 
         {appState === 'loading' && <LoadingState />}
 
         {appState === 'error' && (
           <div className="app-error" role="alert">
-            <div className="app-error-icon" aria-hidden="true">⚠</div>
-            <h2>Analysis failed</h2>
-            <p>{errorMsg}</p>
-            <button
-              className="app-retry-btn"
-              onClick={() => setAppState('idle')}
-              type="button"
-            >
-              Try again
-            </button>
+            <div className="app-error-card">
+              <div className="app-error-icon-wrap" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+              </div>
+              <h2 className="app-error-title">Analysis failed</h2>
+              <p className="app-error-msg">{errorMsg}</p>
+              <button
+                className="app-retry-btn"
+                onClick={() => setAppState('idle')}
+                type="button"
+              >
+                Try again
+              </button>
+            </div>
           </div>
         )}
 

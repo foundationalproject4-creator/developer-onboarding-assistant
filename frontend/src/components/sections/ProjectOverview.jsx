@@ -12,18 +12,13 @@ export default function ProjectOverview({ data }) {
         <p>High-level summary of the repository.</p>
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-          <div>
-            <div style={{ fontFamily: 'var(--mono)', fontWeight: 600, fontSize: 18, color: 'var(--text-h)', marginBottom: 8 }}>
-              {name}
-            </div>
-            <p style={{ fontSize: 15, lineHeight: 1.65, color: 'var(--text)', maxWidth: 620 }}>{description}</p>
-          </div>
-        </div>
+      {/* Main description card */}
+      <div className="card po-hero-card" style={{ marginBottom: 16 }}>
+        <div className="po-repo-name">{name}</div>
+        <p className="po-repo-desc">{description}</p>
 
         <div className="badge-row" style={{ marginTop: 16 }}>
-          <span className="badge badge-accent">⬡ {language}</span>
+          <span className="badge badge-accent">{language}</span>
           <span className="badge badge-neutral">⚖ {license}</span>
           <span className="badge badge-neutral">★ {stars}</span>
           <span className="badge badge-neutral">⑂ {forks} forks</span>
@@ -32,8 +27,9 @@ export default function ProjectOverview({ data }) {
         </div>
       </div>
 
+      {/* Topics */}
       <div className="card">
-        <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-h)', marginBottom: 12 }}>Topics</div>
+        <div className="section-label">Repository Topics</div>
         <div className="badge-row" style={{ marginTop: 0 }}>
           {topics.map(t => (
             <span key={t} className="badge badge-blue">{t}</span>

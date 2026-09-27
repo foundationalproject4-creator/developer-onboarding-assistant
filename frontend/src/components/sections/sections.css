@@ -1,34 +1,44 @@
-/* ─── Shared Section Styles ──────────────────────────────────────────────── */
+/* ─── Shared Section Styles ───────────────────────────────────────────────── */
 
 .section-root {
   padding: 0;
 }
 
+/* ── Section header ───────────────────────────────────────────────────────── */
+
 .section-header {
-  margin-bottom: 24px;
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
 }
 
 .section-header h2 {
-  font-size: 22px;
-  font-weight: 600;
+  font-size: 1.25rem;
+  font-weight: 700;
   color: var(--text-h);
   margin: 0 0 6px;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.025em;
 }
 
 .section-header p {
   color: var(--text);
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.6;
+  margin: 0;
 }
 
-/* ─── Card ───────────────────────────────────────────────────────────────── */
+/* ── Card ─────────────────────────────────────────────────────────────────── */
 
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 20px;
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  transition: border-color 0.15s;
+}
+
+.card:hover {
+  border-color: var(--border-light);
 }
 
 .card-grid {
@@ -37,17 +47,18 @@
   gap: 14px;
 }
 
-/* ─── Badges ─────────────────────────────────────────────────────────────── */
+/* ── Badges ───────────────────────────────────────────────────────────────── */
 
 .badge {
   display: inline-flex;
   align-items: center;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 11.5px;
+  font-weight: 600;
   padding: 3px 9px;
-  border-radius: 99px;
+  border-radius: var(--radius-pill);
   border: 1px solid transparent;
   white-space: nowrap;
+  letter-spacing: 0.01em;
 }
 
 .badge-accent {
@@ -57,7 +68,7 @@
 }
 
 .badge-neutral {
-  background: var(--surface);
+  background: var(--surface-2);
   color: var(--text);
   border-color: var(--border);
 }
@@ -83,47 +94,77 @@
 .badge-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 7px;
   margin-top: 12px;
 }
 
-/* ─── Code blocks ────────────────────────────────────────────────────────── */
+/* ── Code blocks ──────────────────────────────────────────────────────────── */
 
 .code-block {
   position: relative;
   background: var(--code-bg);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
   margin: 8px 0;
-  overflow-x: auto;
+}
+
+/* Terminal chrome bar */
+.code-block::before {
+  content: '';
+  display: block;
+  height: 36px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Fake traffic lights */
+.code-block::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--border);
+  box-shadow: 18px 0 0 var(--border), 36px 0 0 var(--border);
 }
 
 .code-block code {
   font-family: var(--mono);
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.7;
   color: var(--text-h);
   background: none;
-  padding: 0;
+  padding: 14px 16px;
   border-radius: 0;
   white-space: pre;
   display: block;
+  overflow-x: auto;
+}
+
+/* Command prompt prefix */
+.code-block code::before {
+  content: '';
 }
 
 .copy-btn {
   position: absolute;
-  top: 10px;
+  top: 7px;
   right: 10px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 3px 9px;
+  border-radius: var(--radius-sm);
+  padding: 3px 10px;
   font-size: 11px;
-  color: var(--text);
+  font-weight: 600;
+  color: var(--text-muted);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
   font-family: var(--sans);
+  z-index: 1;
+  letter-spacing: 0.01em;
 }
 
 .copy-btn:hover {
@@ -138,7 +179,7 @@
   border-color: var(--green-border);
 }
 
-/* ─── Numbered step list ─────────────────────────────────────────────────── */
+/* ── Numbered step list ───────────────────────────────────────────────────── */
 
 .step-list {
   list-style: none;
@@ -146,13 +187,24 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 0;
 }
 
 .step-item {
   display: flex;
   gap: 16px;
   align-items: flex-start;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.step-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.step-item:first-child {
+  padding-top: 0;
 }
 
 .step-number {
@@ -162,51 +214,284 @@
   border-radius: 50%;
   background: var(--accent-bg);
   color: var(--accent);
-  border: 1px solid var(--accent-border);
-  font-size: 13px;
-  font-weight: 600;
+  border: 1.5px solid var(--accent-border);
+  font-size: 12px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--mono);
-  margin-top: 1px;
+  margin-top: 2px;
+  flex-shrink: 0;
 }
 
 .step-body {
   flex: 1;
+  min-width: 0;
 }
 
 .step-body h4 {
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 600;
   color: var(--text-h);
-  margin: 0 0 4px;
+  margin: 0 0 6px;
+  letter-spacing: -0.01em;
 }
 
 .step-body p {
   font-size: 14px;
   color: var(--text);
-  line-height: 1.6;
+  line-height: 1.65;
   margin: 0 0 8px;
 }
 
-/* ─── File/path display ──────────────────────────────────────────────────── */
+/* ── File/path display ────────────────────────────────────────────────────── */
 
 .filepath {
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: 12.5px;
   color: var(--accent);
   background: var(--accent-bg);
   border: 1px solid var(--accent-border);
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   padding: 2px 8px;
   word-break: break-all;
 }
 
-/* ─── Divider ────────────────────────────────────────────────────────────── */
+/* ── Divider ──────────────────────────────────────────────────────────────── */
 
 .section-divider {
   border: none;
   border-top: 1px solid var(--border);
-  margin: 20px 0;
+  margin: 24px 0;
+}
+
+/* ── Section label (small uppercase label above content) ──────────────────── */
+
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+/* ── ProjectOverview ──────────────────────────────────────────────────────── */
+
+.po-repo-name {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: var(--text-h);
+  margin-bottom: 10px;
+  letter-spacing: -0.02em;
+}
+
+.po-repo-desc {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text);
+  max-width: 680px;
+}
+
+/* ── TechStack ────────────────────────────────────────────────────────────── */
+
+.ts-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.ts-card-name {
+  font-weight: 700;
+  font-size: 14.5px;
+  color: var(--text-h);
+  letter-spacing: -0.01em;
+}
+
+.ts-card-desc {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.6;
+  margin: 0 0 12px;
+}
+
+.ts-card-version {
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+
+/* ── ProjectStructure ─────────────────────────────────────────────────────── */
+
+.tree-node-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.5;
+  border-radius: var(--radius-sm);
+  transition: background 0.1s;
+}
+
+.tree-node-row:hover {
+  background: var(--surface-2);
+}
+
+.tree-node-icon {
+  font-size: 12px;
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+}
+
+/* ── ImportantFiles ───────────────────────────────────────────────────────── */
+
+.if-card {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.if-card-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.if-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.if-card-path-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.if-card-desc {
+  font-size: 13.5px;
+  color: var(--text);
+  line-height: 1.65;
+  margin: 0;
+}
+
+/* ── Architecture ─────────────────────────────────────────────────────────── */
+
+.arch-diagram-wrap {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+}
+
+.arch-component-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.arch-component-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.arch-component-row:first-child {
+  padding-top: 0;
+}
+
+/* ── DevWorkflow ──────────────────────────────────────────────────────────── */
+
+.convention-item {
+  display: flex;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.6;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.convention-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.convention-item:first-child {
+  padding-top: 0;
+}
+
+.convention-arrow {
+  color: var(--accent);
+  flex-shrink: 0;
+  font-size: 13px;
+  margin-top: 1px;
+}
+
+/* ── StarterTasks ─────────────────────────────────────────────────────────── */
+
+.task-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.task-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.task-card-title {
+  font-weight: 600;
+  font-size: 14.5px;
+  color: var(--text-h);
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+
+.task-card-desc {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.65;
+  margin: 0 0 14px;
+  flex: 1;
+}
+
+.task-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-light);
+}
+
+.task-owner-badge {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
 }

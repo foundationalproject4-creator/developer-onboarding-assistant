@@ -1,57 +1,69 @@
-/* ─── RepoInput ──────────────────────────────────────────────────────────── */
+/* ─── RepoInput ───────────────────────────────────────────────────────────── */
 
 .repo-input-wrapper {
   width: 100%;
-  padding: 28px 32px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg);
-  box-sizing: border-box;
 }
 
+/* Hero context: no extra padding, just the form */
 .repo-input-inner {
-  max-width: 760px;
-  margin: 0 auto;
+  width: 100%;
 }
 
-.repo-input-label {
-  display: block;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text);
-  margin-bottom: 10px;
-  text-align: left;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
+.repo-input-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
+
+/* ── Input row ────────────────────────────────────────────────────────────── */
 
 .repo-input-row {
   display: flex;
-  gap: 10px;
+  gap: 0;
   align-items: stretch;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.repo-input-row:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg), var(--shadow-sm);
+}
+
+.repo-input-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px 0 16px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.repo-input-icon svg {
+  width: 16px;
+  height: 16px;
 }
 
 .repo-input-field {
   flex: 1;
-  font-size: 15px;
+  font-size: 14.5px;
   font-family: var(--mono);
-  padding: 11px 16px;
-  border: 1.5px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
+  padding: 13px 12px 13px 0;
+  border: none;
+  background: transparent;
   color: var(--text-h);
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
   min-width: 0;
 }
 
 .repo-input-field::placeholder {
-  color: var(--text);
-  opacity: 0.5;
-}
-
-.repo-input-field:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-bg);
+  color: var(--text-muted);
+  font-family: var(--mono);
 }
 
 .repo-input-field:disabled {
@@ -61,25 +73,27 @@
 
 .repo-input-btn {
   flex-shrink: 0;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   font-family: var(--sans);
-  padding: 11px 24px;
-  border-radius: 8px;
+  padding: 0 22px;
+  margin: 5px 5px 5px 0;
+  border-radius: var(--radius-md);
   background: var(--accent);
   color: #fff;
-  border: 2px solid transparent;
+  border: none;
   cursor: pointer;
-  transition: opacity 0.15s, transform 0.1s;
+  transition: background 0.15s, transform 0.1s;
   white-space: nowrap;
+  letter-spacing: -0.1px;
 }
 
 .repo-input-btn:hover:not(:disabled) {
-  opacity: 0.88;
+  background: var(--accent-hover);
 }
 
 .repo-input-btn:active:not(:disabled) {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 .repo-input-btn:disabled {
@@ -92,23 +106,79 @@
   outline-offset: 2px;
 }
 
-.repo-input-error {
-  margin-top: 8px;
-  font-size: 13px;
-  color: var(--orange);
-  text-align: left;
+/* ── Loading shimmer in button ────────────────────────────────────────────── */
+.repo-input-btn-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-@media (max-width: 600px) {
-  .repo-input-wrapper {
-    padding: 20px 16px;
-  }
+.repo-input-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: #fff;
+  animation: ri-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
 
+@keyframes ri-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Validation error ─────────────────────────────────────────────────────── */
+
+.repo-input-error {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--orange);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.repo-input-error::before {
+  content: '⚠';
+  font-size: 12px;
+}
+
+/* ── Row has error ────────────────────────────────────────────────────────── */
+.repo-input-row.has-error {
+  border-color: var(--orange);
+}
+
+.repo-input-row.has-error:focus-within {
+  box-shadow: 0 0 0 3px var(--orange-bg);
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+
+@media (max-width: 520px) {
   .repo-input-row {
     flex-direction: column;
+    border-radius: var(--radius-lg);
+  }
+
+  .repo-input-icon {
+    display: none;
+  }
+
+  .repo-input-field {
+    padding: 13px 14px;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
   }
 
   .repo-input-btn {
-    width: 100%;
+    margin: 0;
+    border-radius: 0 0 calc(var(--radius-lg) - 2px) calc(var(--radius-lg) - 2px);
+    padding: 13px;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .repo-input-btn-inner {
+    justify-content: center;
   }
 }

@@ -1,4 +1,4 @@
-/* ─── Dashboard ──────────────────────────────────────────────────────────── */
+/* ─── Dashboard ───────────────────────────────────────────────────────────── */
 
 .dashboard-root {
   display: flex;
@@ -6,74 +6,148 @@
   flex: 1;
 }
 
-/* ── Repo meta bar ───────────────────────────────────────────────────────── */
+/* ── Repo summary bar ─────────────────────────────────────────────────────── */
 
-.dashboard-meta {
+.dashboard-repo-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.dashboard-repo-bar-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 20px;
   padding: 16px 32px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
   flex-wrap: wrap;
 }
 
-.dashboard-meta-title {
-  font-size: 16px;
-  font-weight: 600;
+.dashboard-repo-bar-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.dashboard-repo-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--accent);
+  margin-top: 1px;
+}
+
+.dashboard-repo-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.dashboard-repo-name {
+  font-size: 15px;
+  font-weight: 700;
   color: var(--text-h);
   font-family: var(--mono);
+  letter-spacing: -0.3px;
+  margin-bottom: 3px;
 }
 
-.dashboard-meta-desc {
+.dashboard-repo-desc {
   font-size: 13px;
   color: var(--text);
-  max-width: 520px;
   line-height: 1.5;
+  max-width: 560px;
 }
 
-.dashboard-meta-stats {
+.dashboard-repo-stats {
   display: flex;
-  gap: 14px;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.dashboard-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  color: var(--text);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.dashboard-stat svg {
+  width: 13px;
+  height: 13px;
   flex-shrink: 0;
 }
 
-.meta-stat {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 13px;
-  color: var(--text);
+.dashboard-stat--issues {
+  color: var(--green);
+  background: var(--green-bg);
+  border-color: var(--green-border);
 }
 
-.meta-stat-icon {
-  font-size: 14px;
+.dashboard-stat--lang {
+  color: var(--blue);
+  background: var(--blue-bg);
+  border-color: var(--blue-border);
 }
 
-/* ── Tab navigation ──────────────────────────────────────────────────────── */
+.dashboard-stat--license {
+  color: var(--text-muted);
+}
+
+.dashboard-stat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--blue);
+  flex-shrink: 0;
+}
+
+/* ── Tab navigation ───────────────────────────────────────────────────────── */
 
 .dashboard-tabs {
-  display: flex;
-  gap: 2px;
-  padding: 0 32px;
-  border-bottom: 1px solid var(--border);
-  overflow-x: auto;
-  scrollbar-width: none;
   background: var(--bg);
+  border-bottom: 1px solid var(--border);
   position: sticky;
-  top: 0;
-  z-index: 10;
+  top: 56px;     /* height of the app header */
+  z-index: 50;
 }
 
-.dashboard-tabs::-webkit-scrollbar {
+.dashboard-tabs-inner {
+  display: flex;
+  gap: 0;
+  padding: 0 32px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.dashboard-tabs-inner::-webkit-scrollbar {
   display: none;
 }
 
 .tab-btn {
   flex-shrink: 0;
-  padding: 14px 16px;
-  font-size: 14px;
+  padding: 13px 16px;
+  font-size: 13.5px;
   font-weight: 500;
   font-family: var(--sans);
   color: var(--text);
@@ -81,9 +155,10 @@
   border: none;
   border-bottom: 2px solid transparent;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color 0.15s;
   white-space: nowrap;
   margin-bottom: -1px;
+  letter-spacing: -0.1px;
 }
 
 .tab-btn:hover {
@@ -102,19 +177,39 @@
   border-radius: 4px;
 }
 
-/* ── Content area ────────────────────────────────────────────────────────── */
+/* ── Content area ─────────────────────────────────────────────────────────── */
 
 .dashboard-content {
-  padding: 32px;
   flex: 1;
+  background: var(--bg);
 }
 
+.dashboard-content-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 36px 32px;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+
 @media (max-width: 768px) {
-  .dashboard-meta {
+  .dashboard-repo-bar-inner {
     padding: 14px 16px;
   }
 
-  .dashboard-tabs {
+  .dashboard-repo-desc {
+    display: none;
+  }
+
+  .dashboard-repo-stats {
+    gap: 6px;
+  }
+
+  .dashboard-stat--license {
+    display: none;
+  }
+
+  .dashboard-tabs-inner {
     padding: 0 16px;
   }
 
@@ -123,11 +218,13 @@
     font-size: 13px;
   }
 
-  .dashboard-content {
-    padding: 20px 16px;
+  .dashboard-content-inner {
+    padding: 24px 16px;
   }
+}
 
-  .dashboard-meta-desc {
+@media (max-width: 480px) {
+  .dashboard-stat--issues {
     display: none;
   }
 }

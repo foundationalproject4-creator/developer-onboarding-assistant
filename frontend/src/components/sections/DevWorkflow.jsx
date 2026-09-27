@@ -10,11 +10,13 @@ export default function DevWorkflow({ data }) {
         <p>How the team works together — branching, commits, and reviews.</p>
       </div>
 
-      <div className="card" style={{ marginBottom: 20 }}>
-        <p style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.7, margin: 0 }}>{summary}</p>
+      {/* Summary */}
+      <div className="card" style={{ marginBottom: 24 }}>
+        <p style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.75, margin: 0 }}>{summary}</p>
       </div>
 
-      <ol className="step-list" style={{ marginBottom: 20 }}>
+      {/* Steps */}
+      <ol className="step-list" style={{ marginBottom: 24 }}>
         {steps.map(step => (
           <li key={step.step} className="step-item">
             <span className="step-number" aria-hidden="true">{step.step}</span>
@@ -26,14 +28,13 @@ export default function DevWorkflow({ data }) {
         ))}
       </ol>
 
+      {/* Conventions */}
       <div className="card">
-        <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-h)', marginBottom: 12 }}>
-          Team Conventions
-        </div>
-        <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="section-label" style={{ marginBottom: 8 }}>Team Conventions</div>
+        <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
           {conventions.map((c, i) => (
-            <li key={i} style={{ display: 'flex', gap: 10, fontSize: 14, color: 'var(--text)', lineHeight: 1.6 }}>
-              <span style={{ color: 'var(--accent)', flexShrink: 0 }}>→</span>
+            <li key={i} className="convention-item">
+              <span className="convention-arrow" aria-hidden="true">→</span>
               {c}
             </li>
           ))}

@@ -1,4 +1,4 @@
-/* ─── LoadingState ───────────────────────────────────────────────────────── */
+/* ─── LoadingState ────────────────────────────────────────────────────────── */
 
 .loading-root {
   display: flex;
@@ -10,81 +10,202 @@
   flex: 1;
 }
 
-.loading-spinner-wrap {
+/* ── Hex logo ─────────────────────────────────────────────────────────────── */
+
+.loading-logo-wrap {
   position: relative;
-  width: 56px;
-  height: 56px;
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.loading-spinner {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: 3px solid var(--border);
-  border-top-color: var(--accent);
-  animation: spin 0.9s linear infinite;
+.loading-hex {
+  width: 72px;
+  height: 72px;
+  position: relative;
+  z-index: 1;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.loading-hex-bg {
+  fill: var(--accent-bg);
 }
 
-.loading-pulse {
+.loading-hex-ring {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-dasharray: 200;
+  stroke-dashoffset: 200;
+  animation: hex-draw 2s ease forwards, hex-spin 4s linear 0.5s infinite;
+  transform-origin: 32px 32px;
+}
+
+@keyframes hex-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes hex-spin {
+  0%   { stroke-dashoffset: 0; }
+  50%  { stroke-dashoffset: 100; }
+  100% { stroke-dashoffset: 0; }
+}
+
+.loading-hex-code {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  fill: none;
+  opacity: 0;
+  animation: fade-in 0.4s ease 0.6s forwards;
+}
+
+@keyframes fade-in {
+  to { opacity: 1; }
+}
+
+.loading-hex-pulse {
   position: absolute;
-  inset: 6px;
+  inset: -8px;
   border-radius: 50%;
   background: var(--accent-bg);
-  animation: pulse 1.8s ease-in-out infinite;
+  animation: pulse-ring 2s ease-in-out infinite;
+  z-index: 0;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 0.4; transform: scale(0.9); }
-  50%       { opacity: 1;   transform: scale(1.05); }
+@keyframes pulse-ring {
+  0%, 100% { transform: scale(0.88); opacity: 0.3; }
+  50%       { transform: scale(1.08); opacity: 0.6; }
 }
+
+/* ── Text ─────────────────────────────────────────────────────────────────── */
 
 .loading-text {
   text-align: center;
 }
 
-.loading-text h3 {
-  font-size: 17px;
-  font-weight: 600;
+.loading-title {
+  font-size: 1.25rem;
+  font-weight: 700;
   color: var(--text-h);
   margin: 0 0 6px;
+  letter-spacing: -0.02em;
 }
 
-.loading-text p {
-  font-size: 14px;
+.loading-subtitle {
+  font-size: 0.9375rem;
   color: var(--text);
-  transition: opacity 0.4s;
-  min-height: 22px;
+  min-height: 1.4em;
+  transition: opacity 0.35s;
 }
+
+/* ── Progress bar ─────────────────────────────────────────────────────────── */
+
+.loading-progress-wrap {
+  width: 280px;
+  height: 3px;
+  background: var(--surface-2);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.loading-progress-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: var(--radius-pill);
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Steps list ───────────────────────────────────────────────────────────── */
 
 .loading-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
   display: flex;
+  flex-direction: column;
   gap: 8px;
-  flex-wrap: wrap;
-  justify-content: center;
+  min-width: 280px;
 }
 
 .loading-step {
-  font-size: 12px;
-  padding: 4px 12px;
-  border-radius: 99px;
-  border: 1px solid var(--border);
-  color: var(--text);
-  background: var(--surface);
-  transition: background 0.3s, color 0.3s, border-color 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  transition: color 0.3s;
 }
 
-.loading-step.active {
-  background: var(--accent-bg);
-  color: var(--accent);
-  border-color: var(--accent-border);
+.loading-step--pending {
+  color: var(--text-muted);
 }
 
-.loading-step.done {
-  background: var(--green-bg);
+.loading-step--active {
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+.loading-step--done {
   color: var(--green);
-  border-color: var(--green-border);
+}
+
+/* Step indicator — the small icon/number */
+.loading-step-indicator {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  transition: background 0.3s, border-color 0.3s;
+}
+
+.loading-step--pending .loading-step-indicator {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.loading-step--active .loading-step-indicator {
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+}
+
+.loading-step--done .loading-step-indicator {
+  background: var(--green-bg);
+  border: 1px solid var(--green-border);
+}
+
+/* Animated dot for active state */
+.loading-step-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: dot-pulse 1s ease-in-out infinite;
+}
+
+@keyframes dot-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.8); }
+  50%       { opacity: 1;   transform: scale(1.2); }
+}
+
+/* Number for pending */
+.loading-step-num {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--mono);
+}
+
+/* Checkmark SVG for done */
+.loading-step--done .loading-step-indicator svg {
+  width: 12px;
+  height: 12px;
+}
+
+.loading-step-label {
+  line-height: 1.4;
 }

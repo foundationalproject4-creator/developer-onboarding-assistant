@@ -1,14 +1,14 @@
 import './sections.css'
 
 const CATEGORY_BADGE = {
-  Frontend: 'badge-blue',
-  Backend: 'badge-green',
+  Frontend:     'badge-blue',
+  Backend:      'badge-green',
   'Build Tool': 'badge-neutral',
-  Language: 'badge-accent',
-  Server: 'badge-neutral',
-  Analyzer: 'badge-orange',
-  AI: 'badge-accent',
-  Styling: 'badge-neutral',
+  Language:     'badge-accent',
+  Server:       'badge-neutral',
+  Analyzer:     'badge-orange',
+  AI:           'badge-accent',
+  Styling:      'badge-neutral',
 }
 
 export default function TechStack({ data }) {
@@ -22,16 +22,14 @@ export default function TechStack({ data }) {
       <div className="card-grid">
         {data.map(tech => (
           <div key={tech.name} className="card">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-h)' }}>{tech.name}</span>
+            <div className="ts-card-header">
+              <span className="ts-card-name">{tech.name}</span>
               <span className={`badge ${CATEGORY_BADGE[tech.category] ?? 'badge-neutral'}`}>
                 {tech.category}
               </span>
             </div>
-            <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.6, margin: '0 0 10px' }}>
-              {tech.description}
-            </p>
-            <span className="badge badge-neutral" style={{ fontFamily: 'var(--mono)' }}>
+            <p className="ts-card-desc">{tech.description}</p>
+            <span className="badge badge-neutral ts-card-version">
               v{tech.version}
             </span>
           </div>

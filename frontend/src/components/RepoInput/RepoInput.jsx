@@ -32,11 +32,24 @@ export default function RepoInput({ onSubmit, isLoading }) {
   return (
     <div className="repo-input-wrapper">
       <div className="repo-input-inner">
-        <form onSubmit={handleSubmit} noValidate aria-label="Analyze repository">
-          <label htmlFor="repo-url" className="repo-input-label">
-            Repository URL
-          </label>
-          <div className="repo-input-row">
+        <form
+          className="repo-input-form"
+          onSubmit={handleSubmit}
+          noValidate
+          aria-label="Analyze repository"
+        >
+          <div className={`repo-input-row${error ? ' has-error' : ''}`}>
+            {/* Git branch icon */}
+            <span className="repo-input-icon" aria-hidden="true">
+              <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="4" cy="3.5" r="1.5" />
+                <circle cx="4" cy="12.5" r="1.5" />
+                <circle cx="12" cy="5.5" r="1.5" />
+                <path d="M4 5v5" />
+                <path d="M12 7c0 3-3.5 4-8 4" />
+              </svg>
+            </span>
+
             <input
               id="repo-url"
               type="url"
@@ -50,15 +63,20 @@ export default function RepoInput({ onSubmit, isLoading }) {
               autoComplete="off"
               spellCheck={false}
             />
+
             <button
               type="submit"
               className="repo-input-btn"
               disabled={isLoading}
-              aria-label={isLoading ? 'Analyzing…' : 'Analyze Repository'}
+              aria-label={isLoading ? 'Analyzing repository…' : 'Analyze Repository'}
             >
-              {isLoading ? 'Analyzing…' : 'Analyze Repository'}
+              <span className="repo-input-btn-inner">
+                {isLoading && <span className="repo-input-spinner" aria-hidden="true" />}
+                {isLoading ? 'Analyzing…' : 'Analyze Repository'}
+              </span>
             </button>
           </div>
+
           {error && (
             <p id="repo-url-error" className="repo-input-error" role="alert">
               {error}
