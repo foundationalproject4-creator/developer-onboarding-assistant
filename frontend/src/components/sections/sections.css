@@ -279,20 +279,21 @@
 
 /* ── ProjectOverview ──────────────────────────────────────────────────────── */
 
-.po-repo-name {
-  font-family: var(--mono);
-  font-weight: 700;
-  font-size: 1.125rem;
-  color: var(--text-h);
-  margin-bottom: 10px;
-  letter-spacing: -0.02em;
+.po-overview-card {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
-.po-repo-desc {
-  font-size: 15px;
-  line-height: 1.7;
-  color: var(--text);
-  max-width: 680px;
+.po-overview-card p {
+  width: 100%;
+  max-width: none;
+  overflow: visible;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* ── TechStack ────────────────────────────────────────────────────────────── */

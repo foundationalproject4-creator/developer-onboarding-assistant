@@ -256,16 +256,231 @@ def _grounding_audit_failures(
 # Fallback (rule-based) path
 # ---------------------------------------------------------------------------
 
+def _fallback_overview(analysis: RepoAnalysis) -> str:
+    """
+    Build a grounded 2–4 sentence project overview from available analyzer
+    fields.  Never invents information — every claim is derived directly from
+    a non-empty field in *analysis*.
+    """
+    sentences: List[str] = []
+
+    # ── Sentence 1: name + primary language(s) ──────────────────────────────
+    lang_str = ", ".join(analysis.languages) if analysis.languages else None
+    if analysis.project_name and lang_str:
+        sentences.append(
+            f"'{analysis.project_name}' is a software project primarily written in {lang_str}."
+        )
+    elif analysis.project_name:
+        sentences.append(
+            f"'{analysis.project_name}' is a software project."
+        )
+    elif lang_str:
+        sentences.append(
+            f"This project is primarily written in {lang_str}."
+        )
+    else:
+        sentences.append("This project's name and primary language were not detected.")
+
+    # ── Sentence 2: frameworks / main technologies ───────────────────────────
+    if analysis.frameworks:
+        fw_str = ", ".join(analysis.frameworks)
+        sentences.append(f"It makes use of {fw_str}.")
+
+    # ── Sentence 3: how the repo is organized ────────────────────────────────
+    # Derive top-level directory names from project_structure or important_files.
+    top_dirs: List[str] = []
+    if isinstance(analysis.project_structure, dict):
+        # Prefer an explicit 'top_level_dirs' list when the analyzer emits one;
+        # fall back to the dict keys only if no such key exists (plain dir→files map).
+        if "top_level_dirs" in analysis.project_structure:
+            raw = analysis.project_structure["top_level_dirs"]
+            if isinstance(raw, list):
+                top_dirs = [str(d) for d in raw if d]
+        else:
+            top_dirs = [k for k in analysis.project_structure.keys() if k]
+    elif isinstance(analysis.project_structure, list) and analysis.project_structure:
+        # Flat path list — collect unique top-level segments.
+        seen: set = set()
+        for path in analysis.project_structure:
+            segment = path.replace("\\", "/").split("/")[0]
+            if segment and segment not in seen:
+                seen.add(segment)
+                top_dirs.append(segment)
+    elif analysis.important_files:
+        # Fall back to top-level prefixes from important_files paths.
+        seen = set()
+        for entry in analysis.important_files:
+            raw = entry.path if isinstance(entry, ImportantFileEntry) else entry
+            parts = raw.replace("\\", "/").split("/")
+            if len(parts) > 1 and parts[0] not in seen:
+                seen.add(parts[0])
+                top_dirs.append(parts[0])
+
+    if top_dirs:
+        dirs_str = ", ".join(f"'{d}'" for d in top_dirs[:6])
+        sentences.append(
+            f"The repository is organized into the following top-level directories: {dirs_str}."
+        )
+
+    # ── Sentence 4: full dependency list ─────────────────────────────────────
+    if analysis.dependencies:
+        dep_names = [_dep_name(d) for d in analysis.dependencies]
+        sentences.append(
+            f"Key dependencies include {', '.join(dep_names)}."
+        )
+
+    return " ".join(sentences)
+
+
+# ---------------------------------------------------------------------------
+# Signal-detection helpers for _fallback_workflow
+# ---------------------------------------------------------------------------
+
+# File-path fragments whose presence implies a particular workflow signal.
+# All comparisons are done on the lowercased normalised path.
+_ENV_FILE_SIGNALS    = {".env", ".env.example", ".env.sample", ".env.local", "config.yaml", "config.yml", "config.json", ".envrc"}
+_TEST_DIR_SIGNALS    = {"tests", "test", "__tests__", "spec", "specs", "e2e"}
+_TEST_FILE_SIGNALS   = ("test_", "_test.", ".test.", ".spec.")
+_FRONTEND_FILES      = {"package.json", "vite.config.js", "vite.config.ts", "next.config.js", "next.config.ts", "webpack.config.js"}
+_FRONTEND_FRAMEWORKS = {"react", "vue", "angular", "svelte", "next", "nextjs", "nuxt", "vite"}
+_BACKEND_ENTRY_EXTS  = {".py", ".go", ".java", ".rb", ".rs", ".ts", ".js", ".php"}
+_BACKEND_ENTRY_NAMES = {"main.py", "app.py", "server.py", "manage.py", "main.go", "main.ts", "main.js",
+                        "index.ts", "index.js", "app.ts", "app.js", "server.ts", "server.js",
+                        "main.rb", "main.rs", "main.java"}
+
+
+def _normalised_paths(analysis: RepoAnalysis) -> List[str]:
+    """Return a flat list of lowercased, forward-slash-normalised paths
+    drawn from both *important_files* and *project_structure*."""
+    paths: List[str] = []
+    for entry in analysis.important_files:
+        raw = entry.path if isinstance(entry, ImportantFileEntry) else entry
+        paths.append(raw.replace("\\", "/").lower())
+    if isinstance(analysis.project_structure, dict):
+        for key, val in analysis.project_structure.items():
+            paths.append(key.replace("\\", "/").lower())
+            if isinstance(val, list):
+                for item in val:
+                    paths.append(f"{key}/{item}".replace("\\", "/").lower())
+    elif isinstance(analysis.project_structure, list):
+        for p in analysis.project_structure:
+            paths.append(p.replace("\\", "/").lower())
+    return paths
+
+
+def _fallback_workflow(analysis: RepoAnalysis) -> List[str]:
+    """
+    Build 3–5 grounded development-workflow steps from available analyzer data.
+    Every step is conditional on a concrete signal in the input — nothing is
+    invented.  If no signals are present at all, returns the sentinel string
+    so callers always receive a non-empty list.
+    """
+    steps: List[str] = []
+    paths = _normalised_paths(analysis)
+    path_basenames = {p.split("/")[-1] for p in paths}
+    all_langs = {l.lower() for l in analysis.languages}
+    all_frameworks = {f.lower() for f in analysis.frameworks}
+
+    # ── Step 1: Install dependencies ────────────────────────────────────────
+    if analysis.dependencies:
+        dep_names = [_dep_name(d) for d in analysis.dependencies]
+        # Pick the right installer based on detected language / framework signals.
+        if "python" in all_langs:
+            steps.append(
+                f"Install Python dependencies: pip install {' '.join(dep_names)}."
+            )
+        elif any(f in all_frameworks for f in _FRONTEND_FRAMEWORKS) or \
+                any(fe in path_basenames for fe in _FRONTEND_FILES):
+            steps.append(
+                f"Install dependencies: npm install (or yarn install)."
+            )
+        else:
+            steps.append(
+                f"Install dependencies: {', '.join(dep_names)}."
+            )
+
+    # ── Step 2: Configure environment ───────────────────────────────────────
+    env_hits = [p for p in paths if p.split("/")[-1] in _ENV_FILE_SIGNALS]
+    if env_hits:
+        example = next((p for p in env_hits if "example" in p or "sample" in p), None)
+        if example:
+            steps.append(
+                f"Copy '{example}' to '.env' and fill in the required environment variables."
+            )
+        else:
+            steps.append(
+                f"Review and configure the environment file '{env_hits[0]}' before running the project."
+            )
+
+    # ── Step 3: Start the backend / main application ────────────────────────
+    # Look for known entry-point filenames in the paths we have.
+    backend_entry = next(
+        (p for p in paths if p.split("/")[-1] in _BACKEND_ENTRY_NAMES),
+        None,
+    )
+    if backend_entry:
+        fname = backend_entry.split("/")[-1]
+        if fname.endswith(".py"):
+            # Prefer uvicorn when it is a listed dependency
+            dep_names_lower = {_dep_name(d).lower() for d in analysis.dependencies}
+            if "uvicorn" in dep_names_lower:
+                steps.append(
+                    f"Start the application: uvicorn {fname.removesuffix('.py')}:app --reload"
+                )
+            else:
+                steps.append(f"Start the application: python {backend_entry}")
+        elif fname.endswith(".go"):
+            steps.append(f"Start the application: go run {backend_entry}")
+        elif fname in ("index.js", "server.js", "app.js", "index.ts", "server.ts", "app.ts"):
+            steps.append(f"Start the application: node {backend_entry}")
+        else:
+            steps.append(f"Run the entry point: {backend_entry}")
+
+    # ── Step 4: Start the frontend (only when distinct from the backend) ─────
+    has_frontend_fw = any(f in all_frameworks for f in _FRONTEND_FRAMEWORKS)
+    has_pkg_json = "package.json" in path_basenames
+    if (has_frontend_fw or has_pkg_json) and backend_entry:
+        # Only add this step when we also found a backend above, so we don't
+        # duplicate the "start" step for pure-JS projects.
+        steps.append("Start the frontend: npm run dev (or yarn dev).")
+    elif (has_frontend_fw or has_pkg_json) and not steps:
+        # Pure frontend project — this is the main start step.
+        steps.append("Start the project: npm run dev (or yarn dev).")
+
+    # ── Step 5: Run tests ────────────────────────────────────────────────────
+    has_test_dir = any(
+        p.split("/")[0] in _TEST_DIR_SIGNALS or
+        (len(p.split("/")) > 1 and p.split("/")[1] in _TEST_DIR_SIGNALS)
+        for p in paths
+    )
+    has_test_file = any(
+        any(sig in p.split("/")[-1] for sig in _TEST_FILE_SIGNALS)
+        for p in paths
+    )
+    if has_test_dir or has_test_file:
+        if "python" in all_langs:
+            steps.append("Run the test suite: pytest")
+        elif any(f in all_frameworks for f in _FRONTEND_FRAMEWORKS) or has_pkg_json:
+            steps.append("Run the test suite: npm test (or yarn test).")
+        elif "go" in all_langs:
+            steps.append("Run the test suite: go test ./...")
+        else:
+            steps.append("Run the available tests.")
+
+    # ── Fallback: truly sparse input ────────────────────────────────────────
+    if not steps:
+        steps.append("Not derivable from the provided analysis data.")
+
+    return steps
+
+
 def _fallback_generate(analysis: RepoAnalysis) -> OnboardingKnowledge:
     notes: List[str] = []
 
     if analysis.project_name:
-        overview = (
-            f"'{analysis.project_name}' is a project using "
-            f"{', '.join(analysis.languages) or 'an unspecified language'}."
-        )
+        overview = _fallback_overview(analysis)
     else:
-        overview = "Project name was not provided by the repository analyzer."
+        overview = _fallback_overview(analysis)
         notes.append("project_name unavailable")
 
     tech_stack: List[TechStackItem] = []
@@ -310,7 +525,7 @@ def _fallback_generate(analysis: RepoAnalysis) -> OnboardingKnowledge:
                 "Refer to the project README (if present) for environment-specific steps.",
             ]
         ),
-        development_workflow=["Not derivable from the provided analysis data."],
+        development_workflow=_fallback_workflow(analysis),
         starter_tasks=(
             ["Explore the important files listed above to get oriented."]
             if important_files

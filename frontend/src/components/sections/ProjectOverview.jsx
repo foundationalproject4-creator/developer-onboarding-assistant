@@ -9,8 +9,8 @@ export default function ProjectOverview({ data }) {
         <p>High-level summary of the repository.</p>
       </div>
 
-      <div className="card">
-        <p style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.75, margin: 0, whiteSpace: 'pre-wrap' }}>
+      <div className="card po-overview-card">
+        <p style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.75, margin: 0 }}>
           {data || 'No overview available.'}
         </p>
       </div>
