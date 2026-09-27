@@ -1,12 +1,7 @@
 import './sections.css'
 
-const DIFFICULTY_BADGE = {
-  Beginner:     'badge-green',
-  Intermediate: 'badge-orange',
-  Advanced:     'badge-accent',
-}
-
 export default function StarterTasks({ data }) {
+  // `data` is List[str] — each string is a suggested starter task description
   return (
     <div className="section-root">
       <div className="section-header">
@@ -14,21 +9,16 @@ export default function StarterTasks({ data }) {
         <p>Good first issues to tackle when joining this project.</p>
       </div>
 
-      <div className="card-grid">
-        {data.map(task => (
-          <div key={task.id} className="card task-card">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {(data ?? []).map((task, i) => (
+          <div key={i} className="card task-card">
             <div className="task-card-header">
-              <span className="task-card-title">{task.title}</span>
-              <span className={`badge ${DIFFICULTY_BADGE[task.difficulty] ?? 'badge-neutral'}`} style={{ flexShrink: 0 }}>
-                {task.difficulty}
+              <span className="task-card-title">{`Task ${i + 1}`}</span>
+              <span className="badge badge-neutral" style={{ flexShrink: 0 }}>
+                Suggested
               </span>
             </div>
-            <p className="task-card-desc">{task.description}</p>
-            <div className="task-card-footer">
-              <span className="task-owner-badge">
-                {task.owner}
-              </span>
-            </div>
+            <p className="task-card-desc" style={{ whiteSpace: 'pre-wrap' }}>{task}</p>
           </div>
         ))}
       </div>

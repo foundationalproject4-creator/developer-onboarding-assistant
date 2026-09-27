@@ -400,6 +400,20 @@
   border: 1px solid var(--border);
 }
 
+.arch-mermaid-canvas {
+  padding: 16px;
+  background: var(--surface);
+  /* Only scroll if the diagram genuinely overflows the card */
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.arch-mermaid-canvas svg {
+  /* Sizing is handled inline after render; these are safe fallbacks */
+  max-width: 100%;
+  height: auto;
+}
+
 .arch-component-row {
   display: flex;
   gap: 14px;

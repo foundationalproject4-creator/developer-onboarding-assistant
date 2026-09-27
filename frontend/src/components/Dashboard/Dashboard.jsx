@@ -1,23 +1,23 @@
 import { useState } from 'react'
 import ProjectOverview from '../sections/ProjectOverview'
 import TechStack from '../sections/TechStack'
-import ProjectStructure from '../sections/ProjectStructure'
 import ImportantFiles from '../sections/ImportantFiles'
 import Architecture from '../sections/Architecture'
 import SetupGuide from '../sections/SetupGuide'
 import DevWorkflow from '../sections/DevWorkflow'
 import StarterTasks from '../sections/StarterTasks'
+import Dependencies from '../sections/Dependencies'
 import './Dashboard.css'
 
 const TABS = [
-  { id: 'overview',     label: 'Overview',        icon: '◉', Component: ProjectOverview,  dataKey: 'overview' },
-  { id: 'techstack',    label: 'Tech Stack',       icon: '⬡', Component: TechStack,        dataKey: 'techStack' },
-  { id: 'structure',    label: 'Structure',        icon: '❐', Component: ProjectStructure, dataKey: 'structure' },
-  { id: 'files',        label: 'Important Files',  icon: '⊞', Component: ImportantFiles,   dataKey: 'importantFiles' },
-  { id: 'architecture', label: 'Architecture',     icon: '⬟', Component: Architecture,     dataKey: 'architecture' },
-  { id: 'setup',        label: 'Setup Guide',      icon: '▶', Component: SetupGuide,       dataKey: 'setupGuide' },
-  { id: 'workflow',     label: 'Dev Workflow',     icon: '⇄', Component: DevWorkflow,      dataKey: 'devWorkflow' },
-  { id: 'tasks',        label: 'Starter Tasks',    icon: '✓', Component: StarterTasks,     dataKey: 'starterTasks' },
+  { id: 'overview',      label: 'Overview',        icon: '◉', Component: ProjectOverview, dataKey: 'project_overview' },
+  { id: 'techstack',     label: 'Tech Stack',       icon: '⬡', Component: TechStack,       dataKey: 'tech_stack' },
+  { id: 'files',         label: 'Important Files',  icon: '⊞', Component: ImportantFiles,  dataKey: 'important_files' },
+  { id: 'architecture',  label: 'Architecture',     icon: '⬟', Component: Architecture,    dataKey: null },
+  { id: 'setup',         label: 'Setup Guide',      icon: '▶', Component: SetupGuide,      dataKey: 'setup_guide' },
+  { id: 'workflow',      label: 'Dev Workflow',     icon: '⇄', Component: DevWorkflow,     dataKey: 'development_workflow' },
+  { id: 'tasks',         label: 'Starter Tasks',    icon: '✓', Component: StarterTasks,    dataKey: 'starter_tasks' },
+  { id: 'dependencies',  label: 'Dependencies',     icon: '⬡', Component: Dependencies,    dataKey: 'dependencies' },
 ]
 
 export default function Dashboard({ data }) {
@@ -25,7 +25,8 @@ export default function Dashboard({ data }) {
 
   const tab = TABS.find(t => t.id === activeTab)
   const ActiveComponent = tab.Component
-  const sectionData = data[tab.dataKey]
+  // Architecture tab needs both `architecture` string and `architecture_diagram`
+  const sectionData = tab.dataKey === null ? data : data[tab.dataKey]
 
   return (
     <div className="dashboard-root">
@@ -40,31 +41,35 @@ export default function Dashboard({ data }) {
               </svg>
             </div>
             <div>
-              <div className="dashboard-repo-name">{data.overview.name}</div>
-              <div className="dashboard-repo-desc">{data.overview.description}</div>
+              <div className="dashboard-repo-name">Repository Analysis</div>
+              <div className="dashboard-repo-desc">
+                {data.used_llm ? 'AI-enhanced analysis' : 'Rule-based analysis'}
+              </div>
             </div>
           </div>
 
           <div className="dashboard-repo-stats">
-            <span className="dashboard-stat" aria-label={`${data.overview.stars} stars`}>
-              <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 11.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/></svg>
-              {data.overview.stars}
-            </span>
-            <span className="dashboard-stat" aria-label={`${data.overview.forks} forks`}>
-              <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M5 5.372v.878c0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75v-.878a2.25 2.25 0 1 1 1.5 0v.878a2.25 2.25 0 0 1-2.25 2.25h-1.5v2.128a2.251 2.251 0 1 1-1.5 0V8.5h-1.5A2.25 2.25 0 0 1 3.5 6.25v-.878a2.25 2.25 0 1 1 1.5 0ZM5 3.25a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Zm6.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm-3 8.75a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Z"/></svg>
-              {data.overview.forks}
-            </span>
-            <span className="dashboard-stat dashboard-stat--issues" aria-label={`${data.overview.openIssues} open issues`}>
-              <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z"/></svg>
-              {data.overview.openIssues} issues
-            </span>
-            <span className="dashboard-stat dashboard-stat--lang">
-              <span className="dashboard-stat-dot" aria-hidden="true" />
-              {data.overview.language}
-            </span>
-            <span className="dashboard-stat dashboard-stat--license">
-              {data.overview.license}
-            </span>
+            {data.used_llm && (
+              <span className="dashboard-stat dashboard-stat--lang">
+                <span className="dashboard-stat-dot" aria-hidden="true" />
+                AI-enhanced
+              </span>
+            )}
+            {data.tech_stack?.length > 0 && (
+              <span className="dashboard-stat">
+                {data.tech_stack.length} technologies
+              </span>
+            )}
+            {data.important_files?.length > 0 && (
+              <span className="dashboard-stat">
+                {data.important_files.length} key files
+              </span>
+            )}
+            {data.dependencies?.length > 0 && (
+              <span className="dashboard-stat dashboard-stat--issues">
+                {data.dependencies.length} dependencies
+              </span>
+            )}
           </div>
         </div>
       </div>

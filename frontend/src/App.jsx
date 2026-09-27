@@ -2,7 +2,7 @@ import { useState } from 'react'
 import RepoInput from './components/RepoInput/RepoInput'
 import LoadingState from './components/LoadingState/LoadingState'
 import Dashboard from './components/Dashboard/Dashboard'
-import { fetchOnboardingData } from './data/mockData'
+
 import './App.css'
 
 /**
@@ -16,17 +16,33 @@ export default function App() {
   const [errorMsg, setErrorMsg] = useState('')
 
   async function handleAnalyze(url) {
-    setErrorMsg('')
-    setAppState('loading')
-    try {
-      const data = await fetchOnboardingData(url)
-      setOnboardingData(data)
-      setAppState('result')
-    } catch (err) {
-      setErrorMsg(err?.message ?? 'Something went wrong. Please try again.')
-      setAppState('error')
+  setErrorMsg('')
+  setAppState('loading')
+
+  try {
+    const response = await fetch('http://127.0.0.1:8000/analyze', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        repo_url: url,
+      }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.detail || 'Repository analysis failed.')
     }
+
+    setOnboardingData(data)
+    setAppState('result')
+  } catch (err) {
+    setErrorMsg(err?.message ?? 'Something went wrong. Please try again.')
+    setAppState('error')
   }
+}
 
   const isLoading = appState === 'loading'
 

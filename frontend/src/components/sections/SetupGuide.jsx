@@ -15,7 +15,7 @@ function CopyButton({ text }) {
     <button
       className={`copy-btn${copied ? ' copied' : ''}`}
       onClick={handleCopy}
-      aria-label={copied ? 'Copied to clipboard' : 'Copy commands'}
+      aria-label={copied ? 'Copied to clipboard' : 'Copy command'}
       type="button"
     >
       {copied ? '✓ Copied' : 'Copy'}
@@ -24,6 +24,7 @@ function CopyButton({ text }) {
 }
 
 export default function SetupGuide({ data }) {
+  // `data` is List[str] — each string is one setup instruction
   return (
     <div className="section-root">
       <div className="section-header">
@@ -32,14 +33,13 @@ export default function SetupGuide({ data }) {
       </div>
 
       <ol className="step-list">
-        {data.map(step => (
-          <li key={step.step} className="step-item">
-            <span className="step-number" aria-hidden="true">{step.step}</span>
+        {(data ?? []).map((instruction, i) => (
+          <li key={i} className="step-item">
+            <span className="step-number" aria-hidden="true">{i + 1}</span>
             <div className="step-body">
-              <h4>{step.title}</h4>
               <div className="code-block">
-                <CopyButton text={step.commands.join('\n')} />
-                <code>{step.commands.join('\n')}</code>
+                <CopyButton text={instruction} />
+                <code>{instruction}</code>
               </div>
             </div>
           </li>

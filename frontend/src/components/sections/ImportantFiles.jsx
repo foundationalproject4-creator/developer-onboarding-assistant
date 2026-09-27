@@ -1,6 +1,7 @@
 import './sections.css'
 
 export default function ImportantFiles({ data }) {
+  // `data` is List[ImportantFileExplanation]: [{path, purpose}]
   return (
     <div className="section-root">
       <div className="section-header">
@@ -9,8 +10,8 @@ export default function ImportantFiles({ data }) {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {data.map(file => (
-          <div key={file.path} className="card">
+        {(data ?? []).map((file, i) => (
+          <div key={file.path ?? i} className="card">
             <div className="if-card">
               <div className="if-card-icon" aria-hidden="true">
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -20,9 +21,8 @@ export default function ImportantFiles({ data }) {
               <div className="if-card-body">
                 <div className="if-card-path-row">
                   <span className="filepath">{file.path}</span>
-                  <span className="badge badge-accent">{file.role}</span>
                 </div>
-                <p className="if-card-desc">{file.description}</p>
+                <p className="if-card-desc">{file.purpose}</p>
               </div>
             </div>
           </div>
