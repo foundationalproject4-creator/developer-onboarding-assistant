@@ -25,12 +25,18 @@ if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ValidationError, field_validator
 import uvicorn
 
 # Import the analyzer function that Meith built.
 # This must come AFTER the sys.path fix above.
 from analyzer.repository_analyzer import analyze_repository
+
+# Import the adapter and the AI layer.
+# Both imports must come AFTER the sys.path fix so the project root is on sys.path.
+from backend.analyzer_adapter import to_repo_analysis
+from ai.generator import generate_onboarding
+from ai.schemas import OnboardingKnowledge, RepoAnalysis
 
 app = FastAPI(
     title="Developer Onboarding Assistant API",
@@ -75,32 +81,60 @@ def health() -> HealthResponse:
     return HealthResponse(status="ok", version=app.version)
 
 
-@app.post("/analyze", summary="Analyze repository")
-def analyze(request: AnalyzeRequest) -> dict:
+@app.post("/analyze", response_model=OnboardingKnowledge, summary="Analyze repository")
+def analyze(request: AnalyzeRequest) -> OnboardingKnowledge:
     """
-    Accepts a repository path, runs the Repository Analyzer on it, and
-    returns the full analysis result as JSON.
+    Accepts a repository path, runs the Repository Analyzer on it, adapts
+    the result for the AI layer, generates onboarding knowledge, and returns
+    the structured ``OnboardingKnowledge`` as JSON.
 
-    On success the response looks like:
-        { "status": "ok", "repo_path": "...", "total_files": ..., ... }
-
-    On failure (bad path, permission error, etc.) a 400 Bad Request is
-    returned with a JSON body: { "detail": "<error message>" }
+    On failure a 4xx/5xx is returned with a JSON body:
+        { "detail": "<error message>" }
     """
-    # Call Meith's analyzer.  It never raises — errors come back as a dict
-    # with status == "error" and an "error" key describing what went wrong.
+    # ------------------------------------------------------------------
+    # 1. Run the Repository Analyzer.  Never raises — errors are in the dict.
+    # ------------------------------------------------------------------
     result = analyze_repository(request.repo_path)
 
-    # If the analyzer signals an error, turn it into an HTTP 400 response
-    # so the client gets a clear, standard error instead of a 200 with bad data.
     if result.get("status") == "error":
         raise HTTPException(
             status_code=400,
             detail=result.get("error", "Repository analysis failed"),
         )
 
-    # Happy path — return the full analysis dict directly as JSON.
-    return result
+    # ------------------------------------------------------------------
+    # 2. Adapt the analyzer output to the AI layer's RepoAnalysis shape.
+    # ------------------------------------------------------------------
+    try:
+        analysis_dict = to_repo_analysis(result)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(
+            status_code=500, detail="Failed to process repository analysis results."
+        ) from exc
+
+    # ------------------------------------------------------------------
+    # 3. Validate against the RepoAnalysis Pydantic model.
+    # ------------------------------------------------------------------
+    try:
+        analysis = RepoAnalysis.model_validate(analysis_dict)
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=500, detail="Repository analysis data failed schema validation."
+        ) from exc
+
+    # ------------------------------------------------------------------
+    # 4. Generate onboarding knowledge (LLM path with rule-based fallback).
+    # ------------------------------------------------------------------
+    try:
+        knowledge = generate_onboarding(analysis)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(
+            status_code=500, detail="Failed to generate onboarding knowledge."
+        ) from exc
+
+    return knowledge
 
 
 # ---------------------------------------------------------------------------
