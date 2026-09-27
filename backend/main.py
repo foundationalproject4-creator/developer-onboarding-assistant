@@ -11,6 +11,7 @@ import tempfile
 from urllib.parse import urlparse
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ValidationError, field_validator
 
 # Make analyzer/ and ai/ importable from the project root.
@@ -30,6 +31,16 @@ app = FastAPI(
     title="Developer Onboarding Assistant - Backend",
     description="Backend API for the IBM Bob 2.0 Hackathon - Developer Onboarding Assistant",
     version="0.1.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_methods=["POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 

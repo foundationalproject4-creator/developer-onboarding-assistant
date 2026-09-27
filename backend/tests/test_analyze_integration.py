@@ -452,7 +452,71 @@ class TestAIFallbackBehavior:
 
 
 # ---------------------------------------------------------------------------
-# 8. Preserved endpoints
+# 8. CORS preflight
+# ---------------------------------------------------------------------------
+
+class TestCORSPreflight:
+    """OPTIONS /analyze must return the correct CORS headers."""
+
+    def test_options_analyze_returns_200(self):
+        resp = client.options(
+            "/analyze",
+            headers={
+                "Origin": "http://localhost:5173",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "Content-Type",
+            },
+        )
+        assert resp.status_code == 200
+
+    def test_options_analyze_allows_post(self):
+        resp = client.options(
+            "/analyze",
+            headers={
+                "Origin": "http://localhost:5173",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "Content-Type",
+            },
+        )
+        allowed = resp.headers.get("access-control-allow-methods", "")
+        assert "POST" in allowed
+
+    def test_options_analyze_allows_localhost_5173(self):
+        resp = client.options(
+            "/analyze",
+            headers={
+                "Origin": "http://localhost:5173",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "Content-Type",
+            },
+        )
+        assert resp.headers.get("access-control-allow-origin") == "http://localhost:5173"
+
+    def test_options_analyze_allows_127_0_0_1_5173(self):
+        resp = client.options(
+            "/analyze",
+            headers={
+                "Origin": "http://127.0.0.1:5173",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "Content-Type",
+            },
+        )
+        assert resp.headers.get("access-control-allow-origin") == "http://127.0.0.1:5173"
+
+    def test_unknown_origin_not_echoed(self):
+        resp = client.options(
+            "/analyze",
+            headers={
+                "Origin": "http://evil.example.com",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "Content-Type",
+            },
+        )
+        assert resp.headers.get("access-control-allow-origin") != "http://evil.example.com"
+
+
+# ---------------------------------------------------------------------------
+# 9. Preserved endpoints
 # ---------------------------------------------------------------------------
 
 class TestPreservedEndpoints:
