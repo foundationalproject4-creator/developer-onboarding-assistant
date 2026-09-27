@@ -1,11 +1,15 @@
+import AnalysisSource from '../common/AnalysisSource'
 import './sections.css'
 
-export default function ImportantFiles({ data }) {
+export default function ImportantFiles({ data, analysis }) {
   // `data` is List[ImportantFileExplanation]: [{path, purpose}]
   return (
     <div className="section-root">
       <div className="section-header">
-        <h2>Important Files</h2>
+        <div className="section-title-row">
+          <h2>Important Files</h2>
+          <AnalysisSource analysis={analysis} field="important_files" />
+        </div>
         <p>Key files to read first when onboarding to this project.</p>
       </div>
 

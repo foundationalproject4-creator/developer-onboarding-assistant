@@ -1,10 +1,10 @@
-/* ─── Shared Section Styles ───────────────────────────────────────────────── */
+/* ─── Shared Section Styles ─────────────────────────────────────────────── */
 
 .section-root {
   padding: 0;
 }
 
-/* ── Section header ───────────────────────────────────────────────────────── */
+/* ── Section header ─────────────────────────────────────────────────────── */
 
 .section-header {
   margin-bottom: 28px;
@@ -25,29 +25,35 @@
   font-size: 14px;
   line-height: 1.6;
   margin: 0;
+  max-width: 900px;
 }
 
-/* ── Card ─────────────────────────────────────────────────────────────────── */
+/* ── Card ──────────────────────────────────────────────────────────────── */
 
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 20px 22px;
-  transition: border-color 0.15s;
+  padding: 22px 24px;
+  transition:
+    border-color 0.15s,
+    transform 0.15s,
+    box-shadow 0.15s;
 }
 
 .card:hover {
   border-color: var(--border-light);
 }
 
+/* Main dashboard card grid */
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  width: 100%;
 }
 
-/* ── Badges ───────────────────────────────────────────────────────────────── */
+/* ── Badges ────────────────────────────────────────────────────────────── */
 
 .badge {
   display: inline-flex;
@@ -98,7 +104,7 @@
   margin-top: 12px;
 }
 
-/* ── Code blocks ──────────────────────────────────────────────────────────── */
+/* ── Code blocks ───────────────────────────────────────────────────────── */
 
 .code-block {
   position: relative;
@@ -109,7 +115,6 @@
   margin: 8px 0;
 }
 
-/* Terminal chrome bar */
 .code-block::before {
   content: '';
   display: block;
@@ -118,7 +123,6 @@
   border-bottom: 1px solid var(--border);
 }
 
-/* Fake traffic lights */
 .code-block::after {
   content: '';
   position: absolute;
@@ -128,7 +132,9 @@
   height: 10px;
   border-radius: 50%;
   background: var(--border);
-  box-shadow: 18px 0 0 var(--border), 36px 0 0 var(--border);
+  box-shadow:
+    18px 0 0 var(--border),
+    36px 0 0 var(--border);
 }
 
 .code-block code {
@@ -144,11 +150,6 @@
   overflow-x: auto;
 }
 
-/* Command prompt prefix */
-.code-block code::before {
-  content: '';
-}
-
 .copy-btn {
   position: absolute;
   top: 7px;
@@ -161,7 +162,10 @@
   font-weight: 600;
   color: var(--text-muted);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
   font-family: var(--sans);
   z-index: 1;
   letter-spacing: 0.01em;
@@ -179,7 +183,7 @@
   border-color: var(--green-border);
 }
 
-/* ── Numbered step list ───────────────────────────────────────────────────── */
+/* ── Numbered step list ────────────────────────────────────────────────── */
 
 .step-list {
   list-style: none;
@@ -208,7 +212,6 @@
 }
 
 .step-number {
-  flex-shrink: 0;
   width: 28px;
   height: 28px;
   border-radius: 50%;
@@ -245,7 +248,7 @@
   margin: 0 0 8px;
 }
 
-/* ── File/path display ────────────────────────────────────────────────────── */
+/* ── File/path display ─────────────────────────────────────────────────── */
 
 .filepath {
   font-family: var(--mono);
@@ -258,7 +261,7 @@
   word-break: break-all;
 }
 
-/* ── Divider ──────────────────────────────────────────────────────────────── */
+/* ── Divider ────────────────────────────────────────────────────────────── */
 
 .section-divider {
   border: none;
@@ -266,7 +269,7 @@
   margin: 24px 0;
 }
 
-/* ── Section label (small uppercase label above content) ──────────────────── */
+/* ── Section label ──────────────────────────────────────────────────────── */
 
 .section-label {
   font-size: 11px;
@@ -277,26 +280,40 @@
   margin-bottom: 12px;
 }
 
-/* ── ProjectOverview ──────────────────────────────────────────────────────── */
+/* ── ProjectOverview ───────────────────────────────────────────────────── */
+
+/* Scoped with .po-section so the larger heading does not leak into the other
+   sections, which share .section-header and .card. */
+.po-section .section-header h2 {
+  font-size: 1.5rem;
+  line-height: 1.25;
+  margin-bottom: 10px;
+}
+
+.po-section .section-header p {
+  font-size: 15.5px;
+  line-height: 1.7;
+  /* Explicitly none, not omitted: the base .section-header p rule sets
+     max-width: 900px (1000px at >=1400px) and would otherwise still apply. */
+  max-width: none;
+}
 
 .po-overview-card {
-  width: 100%;
   box-sizing: border-box;
-  min-height: 180px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
+  padding: 26px 28px;
 }
 
 .po-overview-card p {
-  width: 100%;
-  max-width: none;
-  overflow: visible;
+  font-size: 15px;
+  color: var(--text);
+  line-height: 1.8;
+  margin: 0;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   word-break: break-word;
 }
 
-/* ── TechStack ────────────────────────────────────────────────────────────── */
+/* ── TechStack ─────────────────────────────────────────────────────────── */
 
 .ts-card-header {
   display: flex;
@@ -325,7 +342,7 @@
   font-size: 11.5px;
 }
 
-/* ── ProjectStructure ─────────────────────────────────────────────────────── */
+/* ── ProjectStructure ──────────────────────────────────────────────────── */
 
 .tree-node-row {
   display: flex;
@@ -350,7 +367,7 @@
   text-align: center;
 }
 
-/* ── ImportantFiles ───────────────────────────────────────────────────────── */
+/* ── ImportantFiles ────────────────────────────────────────────────────── */
 
 .if-card {
   display: flex;
@@ -392,27 +409,52 @@
   margin: 0;
 }
 
-/* ── Architecture ─────────────────────────────────────────────────────────── */
+/* ── Architecture ──────────────────────────────────────────────────────── */
+
+/* Sized with .arch-section so the compact block sizing does not leak into the
+   other sections, which share the same .card and .section-root classes. */
+.arch-section .card {
+  max-width: 900px;
+  padding: 18px 20px;
+  /* Transparent interior — the block shows the normal dashboard background
+     (--bg) instead of the --surface fill. Borders are left as declared. */
+  background: transparent;
+}
 
 .arch-diagram-wrap {
   border-radius: var(--radius-md);
   overflow: hidden;
   margin-bottom: 16px;
   border: 1px solid var(--border);
+  width: 100%;
+  /* Stops the panel stretching across the full-bleed content area. The canvas
+     keeps overflow-x: auto, so a wider diagram still scrolls rather than clips. */
+  max-width: 820px;
+}
+
+/* Source badge for the diagram itself. The wrap is a block box, so the
+   summary is right-aligned with text-align and the panel with margin-left. */
+.arch-diagram-wrap .trust {
+  text-align: right;
+  margin-top: 12px;
 }
 
 .arch-mermaid-canvas {
-  padding: 16px;
-  background: var(--surface);
-  /* Only scroll if the diagram genuinely overflows the card */
+  padding: 12px;
+  /* Transparent interior so the panel matches the dashboard background
+     instead of the --surface fill. The 1px panel border is unchanged. */
+  background: transparent;
   overflow-x: auto;
   overflow-y: visible;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .arch-mermaid-canvas svg {
-  /* Sizing is handled inline after render; these are safe fallbacks */
   max-width: 100%;
   height: auto;
+  display: block;
+  margin: 0 auto;
 }
 
 .arch-component-row {
@@ -432,7 +474,7 @@
   padding-top: 0;
 }
 
-/* ── DevWorkflow ──────────────────────────────────────────────────────────── */
+/* ── DevWorkflow ────────────────────────────────────────────────────────── */
 
 .convention-item {
   display: flex;
@@ -460,36 +502,47 @@
   margin-top: 1px;
 }
 
-/* ── StarterTasks ─────────────────────────────────────────────────────────── */
+/* ── StarterTasks ──────────────────────────────────────────────────────── */
+
+/* The section title/description bump is scoped to .starter-tasks so the other
+   dashboard sections keep the shared .section-header sizing. */
+.starter-tasks .section-header h2 {
+  font-size: 1.5rem;
+  line-height: 1.25;
+}
+
+.starter-tasks .section-header p {
+  font-size: 15.5px;
+  line-height: 1.65;
+}
 
 .task-card {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  gap: 12px;
+  padding: 26px 28px;
 }
 
 .task-card-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 12px;
 }
 
 .task-card-title {
-  font-weight: 600;
-  font-size: 14.5px;
+  font-weight: 700;
+  font-size: 17px;
   color: var(--text-h);
-  line-height: 1.4;
-  letter-spacing: -0.01em;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
 }
 
 .task-card-desc {
-  font-size: 13px;
+  font-size: 15px;
   color: var(--text);
-  line-height: 1.65;
-  margin: 0 0 14px;
-  flex: 1;
+  line-height: 1.75;
+  margin: 0;
 }
 
 .task-card-footer {
@@ -509,4 +562,106 @@
   background: var(--surface-2);
   color: var(--text);
   border: 1px solid var(--border);
+}
+
+/* ── Wide screens ──────────────────────────────────────────────────────── */
+
+@media (min-width: 1400px) {
+  .card-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+  }
+
+  .card {
+    padding: 24px;
+  }
+
+  .section-header {
+    margin-bottom: 32px;
+  }
+
+  .section-header h2 {
+    font-size: 1.35rem;
+  }
+
+  .section-header p {
+    max-width: 1000px;
+  }
+}
+
+/* ── Medium screens ────────────────────────────────────────────────────── */
+
+@media (min-width: 769px) and (max-width: 1100px) {
+  .card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ── Mobile ────────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .card-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .card {
+    padding: 18px;
+  }
+
+  .section-header {
+    margin-bottom: 22px;
+    padding-bottom: 16px;
+  }
+
+  .section-header h2 {
+    font-size: 1.15rem;
+  }
+
+  .section-header p {
+    font-size: 13px;
+  }
+
+  .starter-tasks .section-header h2 {
+    font-size: 1.3rem;
+  }
+
+  .starter-tasks .section-header p {
+    font-size: 14px;
+  }
+
+  .po-section .section-header h2 {
+    font-size: 1.3rem;
+  }
+
+  .po-section .section-header p {
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .po-overview-card {
+    padding: 20px;
+  }
+
+  .po-overview-card p {
+    font-size: 14px;
+    line-height: 1.75;
+  }
+
+  .task-card {
+    padding: 20px;
+  }
+
+  .task-card-title {
+    font-size: 15.5px;
+  }
+
+  .task-card-desc {
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .arch-mermaid-canvas {
+    padding: 10px;
+  }
 }

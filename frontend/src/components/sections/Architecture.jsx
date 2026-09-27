@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import mermaid from 'mermaid'
+import AnalysisSource from '../common/AnalysisSource'
 import './sections.css'
 
 mermaid.initialize({
@@ -10,6 +11,31 @@ mermaid.initialize({
   // Compact sizing — shrinks node padding, font, and inter-node spacing
   themeVariables: {
     fontSize: '13px',
+
+    // Colours only. The 'neutral' theme fills the canvas and every node box
+    // with #ffffff / #eee, which reads as a light block on the dark
+    // dashboard. Transparent fills let the panel show --bg through instead;
+    // the white stroke and light text keep the shape and labels readable.
+    background: 'transparent',
+    mainBkg: 'transparent',
+    primaryColor: 'transparent',
+    secondaryColor: 'transparent',
+    tertiaryColor: 'transparent',
+    edgeLabelBackground: 'transparent',
+
+    primaryBorderColor: '#ffffff',
+    secondaryBorderColor: '#ffffff',
+    tertiaryBorderColor: '#ffffff',
+    // Node strokes are derived as nodeBorder = border1 in the 'neutral'
+    // theme, not from primaryBorderColor, so border1 has to be set too.
+    border1: '#ffffff',
+    lineColor: '#ffffff',
+
+    primaryTextColor: '#e6edf3',
+    secondaryTextColor: '#e6edf3',
+    tertiaryTextColor: '#e6edf3',
+    textColor: '#e6edf3',
+    text: '#e6edf3',
   },
   flowchart: {
     nodeSpacing: 30,
@@ -36,7 +62,6 @@ function MermaidDiagram({ definition }) {
     let cancelled = false
     const id = `mermaid-diag-${++diagramCounter}`
 
-    console.log('MERMAID DATA:', definition)
     mermaid.render(id, definition)
       .then(({ svg }) => {
         if (!cancelled && containerRef.current) {
@@ -72,16 +97,19 @@ function MermaidDiagram({ definition }) {
   return <div ref={containerRef} className="arch-mermaid-canvas" />
 }
 
-export default function Architecture({ data }) {
+export default function Architecture({ data, analysis }) {
   // `data` is the full response object — we need both `architecture` (string)
   // and `architecture_diagram` (Mermaid string)
   const summary = data?.architecture
   const diagram = data?.architecture_diagram
 
   return (
-    <div className="section-root">
+    <div className="section-root arch-section">
       <div className="section-header">
-        <h2>Architecture</h2>
+        <div className="section-title-row">
+          <h2>Architecture</h2>
+          <AnalysisSource analysis={analysis} field="architecture" />
+        </div>
         <p>High-level system design and component responsibilities.</p>
       </div>
 
@@ -97,6 +125,10 @@ export default function Architecture({ data }) {
       {/* Mermaid diagram */}
       {diagram && (
         <div className="arch-diagram-wrap">
+          {/* The diagram itself is never LLM-written (ai/diagram.py runs
+              deterministically on both paths), so it is labelled separately
+              from the summary above. */}
+          <AnalysisSource analysis={analysis} field="architecture_diagram" />
           <MermaidDiagram definition={diagram} />
         </div>
       )}

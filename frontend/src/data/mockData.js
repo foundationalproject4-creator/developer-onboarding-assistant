@@ -36,7 +36,7 @@ export const MOCK_ONBOARDING_DATA = {
     { name: 'Python', category: 'Language', version: '3.11+', description: 'Primary language for the backend, analyzer, and AI integration.' },
     { name: 'Uvicorn', category: 'Server', version: '0.32', description: 'ASGI server running the FastAPI application.' },
     { name: 'GitPython', category: 'Analyzer', version: '3.1', description: 'Python library used to clone and traverse repository structure.' },
-    { name: 'IBM watsonx.ai', category: 'AI', version: 'latest', description: 'LLM API used to generate onboarding content from repository analysis.' },
+    { name: 'Anthropic Claude', category: 'AI', version: 'claude-sonnet-4-6', description: 'LLM API used to generate onboarding content from repository analysis.' },
     { name: 'CSS Custom Properties', category: 'Styling', version: 'native', description: 'Token-based design system with dark mode support.' },
   ],
 
@@ -90,7 +90,7 @@ export const MOCK_ONBOARDING_DATA = {
 
   architecture: {
     summary:
-      'Three-tier architecture: a React frontend, a FastAPI backend, and a Python analyzer layer. The frontend submits a repository URL; the backend orchestrates analysis and AI generation; the analyzer clones and parses the repository; IBM watsonx.ai produces the natural-language content.',
+      'Three-tier architecture: a React frontend, a FastAPI backend, and a Python analyzer layer. The frontend submits a repository URL; the backend orchestrates analysis and AI generation; the analyzer clones and parses the repository; Anthropic Claude produces the natural-language content.',
     diagram: `
 ┌─────────────────────────────────────────────────────┐
 │                    Browser (React)                   │
@@ -104,14 +104,14 @@ export const MOCK_ONBOARDING_DATA = {
 └────────────┬──────────────────────┬─────────────────┘
              │                      │
              ▼                      ▼
-    Git Repository           IBM watsonx.ai
+    Git Repository           Anthropic Claude
     (clone + parse)        (content generation)
 `,
     components: [
       { name: 'React Frontend', responsibility: 'User interface, state management, section rendering' },
       { name: 'FastAPI Backend', responsibility: 'REST API, request validation, orchestration' },
       { name: 'Repository Analyzer', responsibility: 'Git clone, file tree traversal, dependency extraction' },
-      { name: 'IBM watsonx.ai', responsibility: 'LLM-based generation of all onboarding text content' },
+      { name: 'Anthropic Claude', responsibility: 'LLM-based generation of all onboarding text content' },
     ],
   },
 
@@ -126,7 +126,7 @@ export const MOCK_ONBOARDING_DATA = {
     },
     {
       step: 3, title: 'Configure environment variables',
-      commands: ['cp .env.example .env', '# Edit .env and add your IBM watsonx.ai API key'],
+      commands: ['cp .env.example .env', '# Edit .env and set ANTHROPIC_API_KEY to enable the LLM path'],
     },
     {
       step: 4, title: 'Start the FastAPI backend',

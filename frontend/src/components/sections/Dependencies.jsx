@@ -1,3 +1,4 @@
+import AnalysisSource from '../common/AnalysisSource'
 import './sections.css'
 
 const TYPE_BADGE = {
@@ -7,12 +8,15 @@ const TYPE_BADGE = {
   optional: 'badge-orange',
 }
 
-export default function Dependencies({ data }) {
+export default function Dependencies({ data, analysis }) {
   // `data` is List[DependencyExplanation]: [{name, purpose}]
   return (
     <div className="section-root">
       <div className="section-header">
-        <h2>Dependencies</h2>
+        <div className="section-title-row">
+          <h2>Dependencies</h2>
+          <AnalysisSource analysis={analysis} field="dependencies" />
+        </div>
         <p>Project dependencies and what they are used for.</p>
       </div>
 

@@ -23,10 +23,11 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 0 24px;
+  /* Full-bleed with percentage padding, matching .dashboard-content-inner, so
+     the brand sits at the left edge of the page and the badge at the right —
+     the app title is never centred. */
+  padding: 0 4%;
   height: 56px;
-  max-width: 1200px;
-  margin: 0 auto;
   width: 100%;
 }
 
@@ -287,6 +288,10 @@
 @media (max-width: 640px) {
   .app-header-inner {
     padding: 0 16px;
+  }
+
+  .app-brand {
+    min-width: 0;
   }
 
   .app-brand-name {

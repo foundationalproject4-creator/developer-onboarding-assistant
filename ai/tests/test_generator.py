@@ -28,6 +28,7 @@ from ai.generator import (
     _dep_name,
     _dep_to_explanation,
     _fallback_overview,
+    _fallback_setup_guide,
     _fallback_workflow,
     _file_to_explanation,
     _normalised_paths,
@@ -299,13 +300,44 @@ def test_overview_only_mentions_known_names():
 # Hallucination-fix regression tests
 # ---------------------------------------------------------------------------
 
-def test_setup_guide_with_deps_names_them_explicitly():
-    """setup_guide must list actual dependency names, not generic prose."""
+def test_setup_guide_reports_the_detected_manifest_and_entry_point():
+    """setup_guide commands must reference files the analyzer actually reported."""
     result = generate_onboarding(MOCK_ANALYSIS_COMPLETE, use_llm=False)
-    assert any(
-        "fastapi" in step.lower() or "uvicorn" in step.lower() or "pydantic" in step.lower()
-        for step in result.setup_guide
-    ), f"setup_guide did not mention any known dep names: {result.setup_guide}"
+    joined = " | ".join(result.setup_guide)
+    # backend/requirements.txt is in the mock's important_files, so the install
+    # command must point at that exact path.
+    assert "pip install -r backend/requirements.txt" in joined, (
+        f"setup_guide did not install from the detected manifest: {result.setup_guide}"
+    )
+    # backend/main.py is the detected entry point, so the module path must match.
+    assert "uvicorn backend.main:app" in joined, (
+        f"setup_guide did not start the detected entry point: {result.setup_guide}"
+    )
+
+
+def test_setup_guide_steps_only_reference_detected_paths():
+    """No setup step may mention a path the analyzer did not report."""
+    analysis = RepoAnalysis(
+        project_name="my-api",
+        languages=["Python"],
+        important_files=[ImportantFileEntry(path="backend/requirements.txt", description="deps")],
+        dependencies=[DependencyEntry(name="fastapi"), DependencyEntry(name="uvicorn")],
+        project_structure={
+            "top_level_dirs": ["backend"],
+            "entry_points": ["backend/main.py"],
+            "type": "Python application",
+            "has_tests": False,
+            "has_ci": False,
+            "has_docker": False,
+        },
+    )
+    result = generate_onboarding(analysis, use_llm=False)
+    for step in result.setup_guide:
+        assert "entry_points/" not in step, f"metadata key leaked into a command: {step!r}"
+        assert "top_level_dirs" not in step, f"metadata key leaked into a command: {step!r}"
+        assert "requirements" in step or "uvicorn" in step, (
+            f"unexpected ungrounded setup step: {step!r}"
+        )
 
 
 def test_setup_guide_sentinel_when_no_deps():
@@ -313,6 +345,77 @@ def test_setup_guide_sentinel_when_no_deps():
     result = generate_onboarding(MOCK_ANALYSIS_SPARSE, use_llm=False)
     assert result.setup_guide == ["Not derivable from the provided analysis data."], (
         f"Expected sentinel for sparse input, got: {result.setup_guide}"
+    )
+
+
+def test_setup_guide_names_deps_when_no_manifest_detected():
+    """Dependencies without a manifest: name them and admit the command is unknown."""
+    analysis = RepoAnalysis(
+        project_name="legacy",
+        languages=["Python"],
+        dependencies=["requests", "click"],
+    )
+    result = generate_onboarding(analysis, use_llm=False)
+    first = result.setup_guide[0]
+    assert "requests" in first and "click" in first
+    assert "not determined" in first
+
+
+def test_setup_guide_uses_detected_lockfile_package_manager():
+    """A yarn.lock next to package.json must yield yarn, not npm."""
+    analysis = RepoAnalysis(
+        project_name="web",
+        languages=["TypeScript"],
+        important_files=[
+            ImportantFileEntry(path="package.json", description="Node.js project manifest"),
+            ImportantFileEntry(path="yarn.lock", description="Node.js lock file (Yarn)"),
+        ],
+    )
+    steps, gaps = _fallback_setup_guide(analysis)
+    assert "cd . && yarn install" not in steps, f"unexpected cd: {steps}"
+    assert "yarn install" in steps, f"expected yarn install, got: {steps}"
+    assert not any("npm is assumed" in g for g in gaps), f"unnecessary npm caveat: {gaps}"
+
+
+def test_setup_guide_flags_unpinned_package_manager():
+    """No lock file means the package manager is an assumption, and we say so."""
+    analysis = RepoAnalysis(
+        project_name="web",
+        languages=["JavaScript"],
+        important_files=[ImportantFileEntry(path="app/package.json", description="manifest")],
+    )
+    steps, gaps = _fallback_setup_guide(analysis)
+    assert "cd app && npm install" in steps, f"expected npm install in app/, got: {steps}"
+    assert any("npm is assumed" in g for g in gaps), f"missing package-manager caveat: {gaps}"
+
+
+def test_setup_guide_env_step_targets_the_template_directory():
+    """A nested .env.example is copied next to itself, not to the repo root."""
+    analysis = RepoAnalysis(
+        project_name="svc",
+        languages=["Python"],
+        important_files=[
+            ImportantFileEntry(path="service/.env.example", description="env template"),
+        ],
+    )
+    steps, gaps = _fallback_setup_guide(analysis)
+    assert any(s.startswith("cp service/.env.example service/.env") for s in steps), (
+        f"unexpected env step: {steps}"
+    )
+    assert any("variable names" in g for g in gaps), f"missing env caveat: {gaps}"
+
+
+def test_setup_guide_never_reports_an_invented_entry_point():
+    """No detected entry point must produce an explicit 'not detected' line."""
+    analysis = RepoAnalysis(
+        project_name="no-entry",
+        languages=["Python"],
+        important_files=[ImportantFileEntry(path="requirements.txt", description="deps")],
+        dependencies=[DependencyEntry(name="fastapi")],
+    )
+    steps, _ = _fallback_setup_guide(analysis)
+    assert any("Start command: not detected" in s for s in steps), (
+        f"expected an explicit not-detected line, got: {steps}"
     )
 
 
@@ -422,6 +525,7 @@ def test_workflow_frontend_only_produces_npm_dev():
         languages=["TypeScript"],
         frameworks=["React"],
         dependencies=[DependencyEntry(name="react"), DependencyEntry(name="vite")],
+        important_files=[ImportantFileEntry(path="package.json", description="Node.js project manifest")],
     )
     steps = _fallback_workflow(analysis)
     assert any("npm" in s for s in steps), (
@@ -503,9 +607,49 @@ def test_file_to_explanation_entry_with_description():
 
 def test_dep_to_explanation_plain_string():
     """_dep_to_explanation must handle a bare string name, not just DependencyEntry."""
-    result = _dep_to_explanation("requests")
-    assert result.name == "requests"
-    assert result.purpose == "Purpose not specified by analyzer."
+    known = _dep_to_explanation("requests")
+    assert known.name == "requests"
+    assert known.purpose == "HTTP client used to call remote services.", (
+        f"a catalogued package should get its purpose, got: {known.purpose}"
+    )
+
+    unknown = _dep_to_explanation("some-internal-only-lib")
+    assert unknown.name == "some-internal-only-lib"
+    assert unknown.purpose == "Purpose not specified by analyzer.", (
+        f"an unknown package must keep the explicit unknown-purpose text, got: {unknown.purpose}"
+    )
+
+
+def test_dep_to_explanation_keeps_scoped_npm_names():
+    """A scoped npm name keeps its '@' so the purpose lookup can match."""
+    result = _dep_to_explanation("@types/react")
+    assert result.name == "@types/react"
+    assert result.purpose == "TypeScript type declarations for react."
+
+
+def test_dep_to_explanation_resolves_extras_and_versions():
+    """Extras and version specifiers must not stop the purpose lookup."""
+    assert _dep_to_explanation("uvicorn[standard]>=0.34").purpose.startswith("ASGI server")
+    assert _dep_to_explanation("React@18.3.1").purpose.startswith("UI library")
+
+
+def test_dep_to_explanation_uses_full_go_module_paths():
+    """go.mod reports fully-qualified module paths, so the catalog must use them."""
+    result = _dep_to_explanation("github.com/gorilla/mux")
+    assert result.purpose == "Go HTTP router and middleware multiplexer."
+    # A bare last segment must NOT be treated as a Go module.
+    assert _dep_to_explanation("mux").purpose == "Purpose not specified by analyzer."
+
+
+def test_dependency_purpose_catalog_keys_are_normalised():
+    """Every catalog key must survive _normalise_dep_name unchanged.
+
+    A key that normalisation would alter is unreachable dead weight.
+    """
+    from ai.generator import DEPENDENCY_PURPOSES, _normalise_dep_name
+
+    unreachable = [k for k in DEPENDENCY_PURPOSES if _normalise_dep_name(k) != k]
+    assert not unreachable, f"unreachable catalog keys: {unreachable}"
 
 
 def test_dep_name_plain_string():

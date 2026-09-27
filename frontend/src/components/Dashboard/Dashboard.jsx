@@ -105,7 +105,11 @@ export default function Dashboard({ data }) {
         className="dashboard-content"
       >
         <div className="dashboard-content-inner">
-          <ActiveComponent data={sectionData} />
+          {/* `analysis` is the full OnboardingKnowledge response. It carries
+              the provenance fields (used_llm, data_completeness_notes,
+              important_files) that trust signals need; `data` stays the
+              unchanged per-section payload. */}
+          <ActiveComponent data={sectionData} analysis={data} />
         </div>
       </main>
     </div>

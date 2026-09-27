@@ -89,7 +89,7 @@ export default function App() {
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
                   <circle cx="5" cy="5" r="5" />
                 </svg>
-                IBM watsonx.ai · Repository Analysis
+                Anthropic Claude · Repository Analysis
               </div>
 
               <h1 className="app-hero-title">

@@ -18,9 +18,11 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  padding: 16px 32px;
-  max-width: 1200px;
-  margin: 0 auto;
+  /* Same full-bleed pattern as .dashboard-tabs-inner / .dashboard-content-inner:
+     100% width, no max-width cap, no auto margin, 4% inline padding. */
+  padding: 16px 4%;
+  max-width: none;
+  margin: 0;
   width: 100%;
   flex-wrap: wrap;
 }
@@ -133,11 +135,11 @@
 .dashboard-tabs-inner {
   display: flex;
   gap: 0;
-  padding: 0 32px;
+  padding: 0 4%;
+  width: 100%;
+  margin: 0;
   overflow-x: auto;
   scrollbar-width: none;
-  max-width: 1200px;
-  margin: 0 auto;
 }
 
 .dashboard-tabs-inner::-webkit-scrollbar {
@@ -185,9 +187,10 @@
 }
 
 .dashboard-content-inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 36px 32px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 32px 4%;
 }
 
 /* ── Responsive ───────────────────────────────────────────────────────────── */

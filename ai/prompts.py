@@ -56,7 +56,7 @@ import json
 from .schemas import RepoAnalysis
 
 # Increment when the system prompt changes in a semantically significant way.
-PROMPT_VERSION = "v1"
+PROMPT_VERSION = "v2"
 
 # MODEL DRIFT NOTE
 # ----------------
@@ -109,6 +109,14 @@ is null and important_files is empty, set architecture to: \
 "Insufficient data — project_structure was not provided by the analyzer."
 6. For "dependencies[].purpose": derive purpose only from the dependency name \
 itself. Do not use version or type fields to infer purpose.
+7. In "setup_guide" and "development_workflow", a step must reference a file \
+path, entry point, dependency name or framework that literally appears in the \
+input. If a step the developer needs cannot be derived that way (e.g. no \
+requirements.txt path is listed, so the install command is unknown, or no \
+entry point is listed, so the run command is unknown), include the step but \
+state explicitly that it was not detected and what to check instead — do not \
+substitute a conventional guess. Keep the same wording as the deterministic \
+fallback in ai/generator.py so both paths read the same way.
 
 Do NOT include an "architecture_diagram" field — that is generated separately.
 """

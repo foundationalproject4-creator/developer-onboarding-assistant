@@ -1,0 +1,119 @@
+/* ==========================================================================
+   Analysis-source trust signals
+   --------------------------------------------------------------------------
+   Renders a source badge beside a section title plus a collapsible
+   "Why trust this?" disclosure. Behaviour lives in AnalysisSource.jsx; only
+   fields the backend already returns (used_llm, data_completeness_notes,
+   important_files) are ever displayed.
+
+   Layout note: the badge sits in a flex title row and is a fixed, narrow
+   item, so the collapsed state does not move any existing content. The
+   evidence panel only appears when the reader opts in.
+   ========================================================================== */
+
+.section-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.trust {
+  /* Keep the badge pinned to the right so it never reflows the heading. */
+  margin-left: auto;
+  min-width: 0;
+}
+
+/* Collapsed summary must not shift when opened, so the badge keeps its own
+   box and the panel grows beneath it. */
+.trust > summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  gap: 5px;
+}
+
+.trust > summary::-webkit-details-marker {
+  display: none;
+}
+
+.trust > summary:hover {
+  filter: brightness(0.96);
+}
+
+.trust > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.trust-panel {
+  /* Right-aligned so the panel grows away from the section title. */
+  margin-top: 9px;
+  margin-left: auto;
+  width: max-content;
+  max-width: min(470px, 100%);
+  padding: 12px 14px;
+  text-align: left;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 10px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+}
+
+.trust-title {
+  margin: 0 0 5px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.trust-title + .trust-reasons,
+.trust-reasons + .trust-title {
+  margin-top: 11px;
+}
+
+.trust-reasons,
+.trust-files {
+  margin: 0;
+  padding-left: 17px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.trust-reasons li,
+.trust-files li {
+  margin-bottom: 4px;
+}
+
+.trust-files code {
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.trust-more,
+.trust-none {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.trust-none {
+  margin: 0;
+  font-style: italic;
+}
+
+@media (max-width: 640px) {
+  .trust {
+    /* Stop competing with the title for horizontal space. */
+    margin-left: 0;
+  }
+
+  .trust-panel {
+    width: 100%;
+    max-width: 100%;
+  }
+}
