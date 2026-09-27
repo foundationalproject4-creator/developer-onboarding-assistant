@@ -1,8 +1,20 @@
 /**
  * Mock onboarding data — shaped to match the future FastAPI response schema.
- * When the real backend is ready, replace the mock fetch in App.jsx with:
- *   const data = await fetch('/api/analyze', { method: 'POST', body: JSON.stringify({ url }) }).then(r => r.json())
+ *
+ * API base URL is read from the VITE_API_URL environment variable.
+ * Set it in frontend/.env.local for local dev, and in the Vercel dashboard
+ * for production — never hardcode a URL here.
+ *
+ *   # frontend/.env.local
+ *   VITE_API_URL=http://localhost:8000
+ *
+ *   # Vercel dashboard → Environment Variables
+ *   VITE_API_URL=https://your-app.onrender.com
  */
+
+// Vite exposes env vars prefixed with VITE_ via import.meta.env.
+// Falls back to empty string when not set — triggers mock path below.
+const API_BASE = import.meta.env.VITE_API_URL ?? ''
 export const MOCK_ONBOARDING_DATA = {
   overview: {
     name: 'developer-onboarding-assistant',
@@ -183,12 +195,34 @@ function validateRepoUrl(url) {
   }
 }
 
-/** Simulates the async API call. Validates the URL before returning mock data. */
+/**
+ * Fetch onboarding data for a repository URL.
+ *
+ * Live path  — used when VITE_API_URL is set (staging / production).
+ *   POST {VITE_API_URL}/analyze  → { repo_path: repoUrl }
+ *
+ * Mock path  — used when VITE_API_URL is not set (local UI development).
+ *   Returns MOCK_ONBOARDING_DATA after a simulated delay.
+ */
 export async function fetchOnboardingData(repoUrl) {
-  // Validate first — throws immediately, before the loading delay, if invalid
+  // Validate first — throws immediately, before any network call
   validateRepoUrl(repoUrl)
 
-  // Simulate realistic network + analysis delay
+  if (API_BASE) {
+    // ── Live path ─────────────────────────────────────────────────────────
+    const response = await fetch(`${API_BASE}/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ repo_path: repoUrl }),
+    })
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}))
+      throw new Error(body?.detail ?? `Server error ${response.status}`)
+    }
+    return response.json()
+  }
+
+  // ── Mock path (no VITE_API_URL set) ─────────────────────────────────────
   await new Promise(resolve => setTimeout(resolve, 2800))
   return MOCK_ONBOARDING_DATA
 }

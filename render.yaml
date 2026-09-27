@@ -1,0 +1,30 @@
+# render.yaml — Render deployment configuration
+# Docs: https://render.com/docs/blueprint-spec
+#
+# Deploy steps (one-time):
+#   1. Push this file to the main branch.
+#   2. In the Render dashboard → "New Blueprint" → point to this repo.
+#   3. Set the secret environment variables listed below under the service's
+#      "Environment" tab (they are intentionally absent from this file).
+
+services:
+  - type: web
+    name: developer-onboarding-assistant-backend
+    runtime: python
+    rootDir: .                         # repo root — uvicorn is launched from here
+                                       # so that "analyzer/" and "ai/" are importable
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      # ── Required secrets — set these in the Render dashboard, NOT here ──
+      - key: ANTHROPIC_API_KEY
+        sync: false                    # tells Render this is a secret; value set in UI
+
+      # ── CORS — set to the real Vercel URL once deployed ──────────────────
+      # Example: https://developer-onboarding-assistant.vercel.app
+      - key: ALLOWED_ORIGINS
+        sync: false
+
+      # ── Render injects PORT automatically; listed here for documentation ─
+      - key: PORT
+        generateValue: false           # Render manages this; do not override
